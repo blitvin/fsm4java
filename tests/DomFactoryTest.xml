@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<stateMachines>
+	<stateMachine name="correctMachine" eventTypeClass="org.blitvin.StateMachine.domfactorytest.TestEnum">
+		<state name="state1" isInitial="true">
+			<transition event="enum1" toState="state2"/>
+			<transition event="enum2" toState="state3"/>
+			<other_events_transition toState="state1"/>
+ 		</state>
+ 		<state name="state2" isFinal="false">
+ 			<transition event="enum1" toState="state1" 
+ 				class="org.blitvin.StateMachine.domfactorytest.TestTransition" testTransitionAttribute="true"/>
+ 			<other_events_transition toState="state3"/>
+ 		</state>
+ 		<state name="state3" isFinal="true">
+ 			<other_events_transition toState="state2"/>
+ 		</state>
+	</stateMachine>
+	<stateMachine name="incorrectEnumMachine" eventTypeClass="org.blitvin.StateMachine.domfactorytest.TestEnum">
+		<state name="state1" isInitial="true">
+			<transition event="enum1" toState="state2"/>
+			<transition event="enum4" toState="state3"/>
+			<other_events_transition toState="state1"/>
+ 		</state>
+ 		<state name="state2" isFinal="false">
+ 			<transition event="enum1" toState="state1" 
+ 				class="org.blitvin.StateMachine.domfactorytest.TestTransition" testTransitionAttribute="true"/>
+ 			<other_events_transition toState="state3"/>
+ 		</state>
+ 		<state name="state3" isFinal="true">
+ 			<other_events_transition toState="state2"/>
+ 		</state>
+	</stateMachine>
+	<stateMachine name="nonExistingStateMachine" eventTypeClass="org.blitvin.StateMachine.domfactorytest.TestEnum">
+		<state name="state1" isInitial="true">
+			<transition event="enum1" toState="state2"/>
+			<transition event="enum2" toState="state3"/>
+			<other_events_transition toState="state1"/>
+ 		</state>
+ 		<state name="state2" isFinal="false">
+ 			<transition event="enum1" toState="state5" 
+ 				class="org.blitvin.StateMachine.domfactorytest.TestTransition" testTransitionAttribute="true"/>
+ 			<other_events_transition toState="state3"/>
+ 		</state>
+ 		<state name="state3" isFinal="true">
+ 			<other_events_transition toState="state2"/>
+ 		</state>
+	</stateMachine>
+	<stateMachine name="badClassMachine" eventTypeClass="org.blitvin.StateMachine.domfactorytest.TestEnum">
+		<state name="state1" isInitial="true">
+			<transition event="enum1" toState="state2"/>
+			<transition event="enum2" toState="state3"/>
+			<other_events_transition toState="state1"/>
+ 		</state>
+ 		<state name="state2" isFinal="false">
+ 			<transition event="enum1" toState="state1" 
+ 				class="org.blitvin.StateMachine.domfactorytest.BadTransition" testTransitionAttribute="true"/>
+ 			<other_events_transition toState="state3"/>
+ 		</state>
+ 		<state name="state3" isFinal="true">
+ 			<other_events_transition toState="state2"/>
+ 		</state>
+	</stateMachine>
+	<stateMachine name="classNotcorrectInherirorMachine" eventTypeClass="org.blitvin.StateMachine.domfactorytest.TestEnum">
+		<state name="state1" isInitial="true">
+			<transition event="enum1" toState="state2"/>
+			<transition event="enum2" toState="state3"/>
+			<other_events_transition toState="state1"/>
+ 		</state>
+ 		<state name="state2" isFinal="false">
+ 			<transition event="enum1" toState="state1" 
+ 				class="org.blitvin.StateMachine.domfactorytest.TestEnum" testTransitionAttribute="true"/>
+ 			<other_events_transition toState="state3"/>
+ 		</state>
+ 		<state name="state3" isFinal="true">
+ 			<other_events_transition toState="state2"/>
+ 		</state>
+	</stateMachine>
+	<stateMachine name="eventTypeIsNotEnumMachine" eventTypeClass="org.blitvin.StateMachine.domfactorytest.TestTransition">
+		<state name="state1" isInitial="true">
+			<transition event="enum1" toState="state2"/>
+			<transition event="enum2" toState="state3"/>
+			<other_events_transition toState="state1"/>
+ 		</state>
+ 		<state name="state2" isFinal="false">
+ 			<transition event="enum1" toState="state1" 
+ 				class="org.blitvin.StateMachine.domfactorytest.TestTransition" testTransitionAttribute="true"/>
+ 			<other_events_transition toState="state3"/>
+ 		</state>
+ 		<state name="state3" isFinal="true">
+ 			<other_events_transition toState="state2"/>
+ 		</state>
+	</stateMachine>
+</stateMachines>

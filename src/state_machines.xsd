@@ -1,0 +1,76 @@
+<?xml version="1.0"?>
+<!--
+/*
+ * (C) Copyright Boris Litvin 2014
+ * This file is part of StateMachine library.
+ *
+ *  StateMachine is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   NioServer is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with NioServer.  If not, see <http://www.gnu.org/licenses/>.
+ */ 
+ -->
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	<xsd:element name="stateMachines">
+		<xsd:complexType>
+	<xsd:sequence>
+		<xsd:element name="stateMachine" maxOccurs="unbounded">
+			<xsd:complexType mixed="true">
+				<xsd:sequence>
+					<xsd:element name="state" maxOccurs="unbounded">
+						<xsd:complexType>
+							<xsd:sequence>
+								<xsd:element name="transition" minOccurs="0" maxOccurs="unbounded">
+									<xsd:complexType>
+										<xsd:attribute name="event" type="xsd:string"
+											use="required" />
+										<xsd:attribute name="class" type="xsd:string" />
+										<xsd:anyAttribute processContents="lax"/>
+									</xsd:complexType>
+								</xsd:element>
+								<xsd:element name="other_events_transition"
+									minOccurs="0" maxOccurs="1">
+									<xsd:complexType>
+										<xsd:attribute name="class" type="xsd:string"/>
+										<xsd:anyAttribute processContents="lax"/>
+									</xsd:complexType>
+								</xsd:element>
+							</xsd:sequence>
+							<xsd:attribute name="name" use="required" type="xsd:string" />
+							<xsd:attribute name="isFinal" type="xsd:boolean" />
+							<xsd:attribute name="isInitial" type="xsd:boolean" />
+							<xsd:attribute name="class" type="xsd:string" />
+							<xsd:anyAttribute processContents="lax"/>
+						</xsd:complexType>
+						<xsd:unique name="transition_unique">
+							<xsd:selector xpath="state" />
+							<xsd:field xpath="@event" />
+						</xsd:unique>
+					</xsd:element>
+				</xsd:sequence>
+				<xsd:attribute name="name" type="xsd:string" use="required" />
+				<xsd:attribute name="class" type="xsd:string" />
+				<xsd:attribute name="eventTypeClass" type="xsd:string"
+					use="required" />
+			</xsd:complexType>
+			<xsd:unique name="state_name_unique">
+				<xsd:selector xpath="state" />
+				<xsd:field xpath="@name" />
+			</xsd:unique>
+		</xsd:element>
+	</xsd:sequence>
+		</xsd:complexType>
+		<xsd:unique name="unique_machine_name">
+			<xsd:selector xpath="stateMachine"/>
+			<xsd:field xpath="@name"/>
+		</xsd:unique>
+	</xsd:element>
+</xsd:schema>
