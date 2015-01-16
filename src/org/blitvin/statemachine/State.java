@@ -72,8 +72,10 @@ public class State<EventType extends Enum<EventType>> {
 		Transition<EventType> curTransition = transitions.get(event.getEventType());
 		if (curTransition == null) { //check for (*) transition
 			curTransition = transitions.get(null);
-			if (curTransition == null)
+			if (curTransition == null) {
+				invalidTransitionCallback(event);
 				throw new InvalidEventType();
+			}
 		}
 		return curTransition.transit(event);
 	}
@@ -90,7 +92,7 @@ public class State<EventType extends Enum<EventType>> {
 		return machine;
 	}
 
-	public void setContainingStateMachine(StateMachine<EventType> machine) {
+	public void setContainingStateMachine(SimpleStateMachine<EventType> machine) {
 		if (this.machine != null) 
 			return;
 		this.machine = machine;
@@ -110,12 +112,28 @@ public class State<EventType extends Enum<EventType>> {
 	}
 	
 	/**
+	 * callback for implementation of user defined logic upon other state becoming current.
+	 * This function is called after appropriate transition transit method executed and returned
+	 * state other than current  and before stateBecomesCurrentCallback of the new state is called
+	 *
+	 * @param theEvent event upon which state becomes current
+	 * @param nextState previous current state
+	 */
+	public void otherStateBecomesCurrentCallback(StateMachineEvent<EventType> theEvent, State<EventType> nextState){
+		
+	}
+	
+	public void invalidTransitionCallback(StateMachineEvent<EventType> theEvent){
+		
+	}
+	/**
 	 * initialization callback, which completes initialization of  the state. Note that this method can be called
 	 * from within conataining state machine's constructor
 	 * @param initializer map of initialization parameters
 	 * @throws BadStateMachineSpecification
 	 */
-	public void stateMachineInitializedCallback(Map<String,String>  initializer) throws BadStateMachineSpecification
+	public void stateMachineInitializedCallback(Map<Object,Object>  initializer) throws BadStateMachineSpecification
 	{
 	}
+	
 }

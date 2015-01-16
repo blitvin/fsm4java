@@ -48,11 +48,7 @@ public class SimpleTransition<EventType extends Enum<EventType>> extends Transit
 		this.targetStateName = targetStateName;
 	}
 
-	public StateMachine<EventType> getContainingMachine() {
-		return containingMachine;
-	}
-
-	
+		
 	@Override
 	public State<EventType> transit(StateMachineEvent<EventType>  event) {
 		
@@ -60,12 +56,12 @@ public class SimpleTransition<EventType extends Enum<EventType>> extends Transit
 		
 	}
 	
-	public SimpleTransition(StateMachine<EventType> machine) throws BadStateMachineSpecification{
+	public SimpleTransition(SimpleStateMachine<EventType> machine) throws BadStateMachineSpecification{
 		super(machine);
 		
 	}
 	
-	public SimpleTransition(State<EventType>  targetState,StateMachine<EventType> containingMachine){
+	public SimpleTransition(State<EventType>  targetState,SimpleStateMachine<EventType> containingMachine){
 		super(containingMachine);
 		this.targetState = targetState;
 	}
@@ -75,7 +71,7 @@ public class SimpleTransition<EventType extends Enum<EventType>> extends Transit
 	}
 	
 	@Override
-	public void stateMachineInitializedCallback()  throws BadStateMachineSpecification{
+	public void stateMachineInitializedCallback(StateMachine<EventType> containingMachine)  throws BadStateMachineSpecification{
 		if (targetState != null) {
 			targetStateName = targetState.getStateName();
 			return;
@@ -91,11 +87,11 @@ public class SimpleTransition<EventType extends Enum<EventType>> extends Transit
 	}
 
 	@Override
-	public void stateMachineInitializedCallback(Map<String,String>  initializer,
+	public void stateMachineInitializedCallback(Map<Object,Object>  initializer,
 			StateMachine<EventType> containingMachine)
 			throws BadStateMachineSpecification {
 		this.containingMachine = containingMachine;
-		targetStateName = initializer.get(TARGET_STATE);
+		targetStateName = (String)initializer.get(TARGET_STATE);
 		if (targetStateName == null) 
 			throw new BadStateMachineSpecification("SimpleTransaction : target state name is not specified");
 		

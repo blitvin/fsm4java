@@ -75,7 +75,7 @@ public abstract class Transition<EventType extends Enum<EventType>> {
 	 * This function used for completing initialization that depend on state of other states initialization
 	 *  note that this callback can be called from within 
 	 */
-	abstract public void stateMachineInitializedCallback() throws BadStateMachineSpecification;
+	abstract public void stateMachineInitializedCallback(StateMachine<EventType> containingMachine) throws BadStateMachineSpecification;
 	/**
 	 * This callback is called after constructor of state machine initialized all states that is
 	 * states are registered with the state machine, and constructor has called setContainingMachine on them
@@ -86,5 +86,5 @@ public abstract class Transition<EventType extends Enum<EventType>> {
 	 * @param containingMachine - machine the transition belongs to
 	 * @throws BadStateMachineSpecification - throw it if something gone wrong during initializaiton
 	 */
-	abstract public void stateMachineInitializedCallback(Map<String,String> initializer, StateMachine<EventType> containingMachine) throws BadStateMachineSpecification;
+	abstract public void stateMachineInitializedCallback(Map<Object,Object> initializer, StateMachine<EventType> containingMachine) throws BadStateMachineSpecification;
 }

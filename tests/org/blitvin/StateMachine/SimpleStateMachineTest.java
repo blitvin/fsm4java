@@ -23,7 +23,7 @@ import org.blitvin.statemachine.BadStateMachineSpecification;
 import org.blitvin.statemachine.InvalidEventType;
 import org.blitvin.statemachine.SimpleTransition;
 import org.blitvin.statemachine.State;
-import org.blitvin.statemachine.StateMachine;
+import org.blitvin.statemachine.SimpleStateMachine;
 import org.blitvin.statemachine.StateMachineEvent;
 import org.blitvin.statemachine.Transition;
 
@@ -50,7 +50,7 @@ class SimpleEvent implements StateMachineEvent<STM_EVENTS>{
 }
 public class SimpleStateMachineTest {
 
-	public static StateMachine<STM_EVENTS> createMachine() throws BadStateMachineSpecification {
+	public static SimpleStateMachine<STM_EVENTS> createMachine() throws BadStateMachineSpecification {
 		HashMap<String, State<STM_EVENTS>> states = new HashMap<>();
 		State<STM_EVENTS> state1 = new State<>("INITIAL", false);
 		State<STM_EVENTS> state2 = new State<>("GOT_B", false);
@@ -71,10 +71,10 @@ public class SimpleStateMachineTest {
 		states.put(state1.getStateName(), state1);
 		states.put(state2.getStateName(), state2);
 		states.put(state3.getStateName(), state3);
-		return new StateMachine<>(states,state1);
+		return new SimpleStateMachine<>(states,state1);
 	}
 	public static void main(String[] args){
-		StateMachine<STM_EVENTS> mach;
+		SimpleStateMachine<STM_EVENTS> mach;
 		try {
 			mach = createMachine();
 		} catch (BadStateMachineSpecification e1) {

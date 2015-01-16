@@ -22,6 +22,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 
 import javax.xml.XMLConstants;
@@ -79,14 +80,31 @@ public class DOMStateMachineFactory extends	StateMachineFactory {
 	/**
 	 * name of state machine default class
 	 */
-	public static final String DEFAULT_STATE_MACHINE_CLASS = "org.blitvin.statemachine.StateMachine";
+	public static final String DEFAULT_STATE_MACHINE_CLASS = "org.blitvin.statemachine.SimpleStateMachine";
 	
+	@SuppressWarnings("rawtypes")
 	protected static final Class[] STATE_CONSTUCTOR_PARAMS={String.class,Boolean.class};
+	@SuppressWarnings("rawtypes")
 	protected static final Class[] VALUE_OF_PARAMS = {String.class};
+	@SuppressWarnings("rawtypes")
 	protected static final Class[] STATE_MACHINE_CONSTRUCTOR_PARAMS={Map.class,State.class};
 	/* list of parsed state machine specifications */
 	protected HashMap<String,Node> stateMachineSpecs;
 	
+	protected static final HashSet<String> standardStateTags = new HashSet<>();
+	static {
+		standardStateTags.add(IS_FINAL_STATE_TAG);
+		standardStateTags.add(IS_INITIAL_STATE_TAG);
+		standardStateTags.add(IMPL_CLASS_TAG);
+		standardStateTags.add(ELEMENT_NAME_TAG);
+	}
+	
+	protected static final HashSet<String> standardTransitionTags = new HashSet<>();
+	static {
+		standardTransitionTags.add(ELEMENT_NAME_TAG);
+		standardTransitionTags.add(IMPL_CLASS_TAG);
+		standardTransitionTags.add(ON_EVENT_TAG);
+	}
 	/**
 	 * default constructor, xml file name is deduced from property @see {@link #DEFAULT_XML_FILE_PROPERTY}.
 	 * File is searched by class loader i.e. in most cases in CLASSPATH 
@@ -153,10 +171,12 @@ public class DOMStateMachineFactory extends	StateMachineFactory {
 	 * @return state object
 	 * @throws BadStateMachineSpecification 
 	 */
+	@SuppressWarnings("rawtypes")
 	private State buildState(Element stateElement) throws BadStateMachineSpecification{
 		Class stateClass = getClass(stateElement, DEFAULT_STATE_CLASS,State.class);
 		
 			try {
+				@SuppressWarnings("unchecked")
 				Constructor c = stateClass.getConstructor(STATE_CONSTUCTOR_PARAMS);
 				Object[] args = new Object[2];
 				args[0] = stateElement.getAttribute(ELEMENT_NAME_TAG);
@@ -171,17 +191,13 @@ public class DOMStateMachineFactory extends	StateMachineFactory {
 		
 	}
 	
-	private Transition buildTransition(Element transitionElement) throws BadStateMachineSpecification {
-		Class transitionClass = getClass(transitionElement,DEFAULT_TRANSITION_CLASS,Transition.class);
-		return null;
-	}
-	
-	private HashMap<String,String> getAttributes(Node n){
+	private void fillAttributes(Node n, @SuppressWarnings("rawtypes") StateMachineBuilder builder, HashSet<String> standards){
 		NamedNodeMap map = n.getAttributes();
-		HashMap<String,String> retVal = new HashMap<>();
-		for(int i =0 ; i < map.getLength(); ++i)
-			retVal.put(map.item(i).getNodeName(), map.item(i).getNodeValue());
-		return retVal;
+		for(int i =0 ; i < map.getLength(); ++i) {
+			if (!standards.contains(map.item(i).getNodeName())){
+				builder.addAttribute(map.item(i).getNodeName(), map.item(i).getNodeValue());
+			}
+		}
 	}
 	
 	@SuppressWarnings("rawtypes")
@@ -189,6 +205,7 @@ public class DOMStateMachineFactory extends	StateMachineFactory {
 		Object[] mvargs =  new Object[1];
 		mvargs[0] = value;
 		try {
+			@SuppressWarnings("unchecked")
 			Method vo = eventTypeClass.getMethod("valueOf", VALUE_OF_PARAMS);
 			return vo.invoke(null, mvargs);
 		} catch (IllegalAccessException | IllegalArgumentException
@@ -202,10 +219,10 @@ public class DOMStateMachineFactory extends	StateMachineFactory {
 	 * each invocation creates machine with distinct set of states and transitions (no sharing of
 	 * states among instances of machine created from the same specification)
 	 * @param machineName name of state machine as specified by name attribute of StateMachine entry
-	 * @return new instance of the machine constructed according to XML file's sepcifications
+	 * @return new instance of the machine constructed according to XML file's specifications
 	 * @throws BadStateMachineSpecification if construction failed for any reason
 	 */
-	@SuppressWarnings("rawtypes")
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@Override
 	public StateMachine getStateMachine(String machineName) throws BadStateMachineSpecification {
 		Node stateMachineNode = stateMachineSpecs.get(machineName);
@@ -213,11 +230,9 @@ public class DOMStateMachineFactory extends	StateMachineFactory {
 			throw new BadStateMachineSpecification("Unknown state machine name:"+machineName);
 		Element stateMachineElem = (Element)stateMachineNode;
 		
-		State initialState = null;
 		/* event type class represents enum type of state machine alphabet*/
 		Class eventTypeClass = null;
-		HashMap<String,State> states=new HashMap<String, State>();
-		StateMachineInitializer initializer = new StateMachineInitializer<>();
+		
 		try {
 			eventTypeClass = Class.forName(stateMachineElem.getAttribute(EVENT_TYPE_IMPL_CLASS_TAG));
 		}catch (ClassNotFoundException e) {
@@ -226,7 +241,10 @@ public class DOMStateMachineFactory extends	StateMachineFactory {
 		/* event type expected to be enum */
 		if (!eventTypeClass.isEnum())
 			throw new BadStateMachineSpecification("Expecting enum class name in attribute "+EVENT_TYPE_IMPL_CLASS_TAG);
-		/* construct states, for now without transitions and corresponding initializers*/
+		
+		StateMachineBuilder builder = new StateMachineBuilder<>(machineName,
+				getClass((Element)stateMachineNode,DEFAULT_STATE_MACHINE_CLASS,SimpleStateMachine.class));
+		
 		NodeList stateNodes =stateMachineElem.getChildNodes();
 		for(int i = 0 ; i < stateNodes.getLength(); ++i) {
 			if (stateNodes.item(i).getNodeType() != Node.ELEMENT_NODE)
@@ -235,16 +253,11 @@ public class DOMStateMachineFactory extends	StateMachineFactory {
 			//if (stateElem.hasAttribute(IMPL_CLASS_TAG))
 			
 			State s = buildState(stateElem);
-			states.put(stateElem.getAttribute(ELEMENT_NAME_TAG),s);
+			builder.addState(s);
 			if (stateElem.hasAttribute(IS_INITIAL_STATE_TAG) && Boolean.valueOf(stateElem.getAttribute(IS_INITIAL_STATE_TAG))){
-				initialState = s;
+				builder.markStateAsInitial();
 			}
-			initializer.addStateProperties(s.getStateName(), getAttributes(stateElem));
-			/* for newly created state, transitions map eventTypeClass->transition object. Because of erasure
-			 * signature is OBject->Transition
-			 */
-			HashMap<Object,Transition> transitions = new HashMap<>();
-			HashMap<Object,HashMap<String,String>> transitionParams = new HashMap<>();
+			fillAttributes(stateElem, builder, standardStateTags);
 			NodeList transitionNodes = stateElem.getChildNodes();
 			/* now construct transitions for current state */
 			for(int j = 0 ; j < transitionNodes.getLength() ; ++j) {
@@ -253,51 +266,28 @@ public class DOMStateMachineFactory extends	StateMachineFactory {
 					Class transitionClass = getClass((Element) transitionNode,DEFAULT_TRANSITION_CLASS,Transition.class);
 					try {
 						Transition transition = (Transition) transitionClass.newInstance();
-						HashMap<String, String> attributes = getAttributes(transitionNode);
 						if (transitionNode.getNodeName().equals(DEFAULT_TRANSITION)) {
-							transitions.put(null,transition);
-							//initializer.addProperties4DefaultTransition(s.getStateName(), attributes);
-							transitionParams.put(null, attributes);
+							builder.addDefaultTransition(transition);
 						}
 						else {
-							Object eventType = getEventTypeConst(eventTypeClass, attributes.get(ON_EVENT_TAG));
-							transitions.put(eventType, transition);
-							transitionParams.put(eventType, attributes);
+							Object eventType = getEventTypeConst(eventTypeClass, 
+									((Element)transitionNode).getAttribute(ON_EVENT_TAG));
+							builder.addTransition((Enum)eventType, transition);
 						}
-					} catch (InstantiationException | IllegalAccessException e) {
+						fillAttributes(transitionNode, builder, standardTransitionTags);
+					}
+					catch (InstantiationException | IllegalAccessException e) {
 						throw new BadStateMachineSpecification("Can't create transition ",e);
 					}
-					
 				}
 			}
-			s.setTransitions(transitions);
-			initializer.addProperties4StateTransitions(s.getStateName(), transitionParams);
 			
 		}
-		/*  now we have map of states including transitions (although not yet fully initialized ones ) 
-		 * it's time to construct state machine object
-		 */
-		Class stateMachineClass = getClass((Element)stateMachineNode,DEFAULT_STATE_MACHINE_CLASS,StateMachine.class);
-		Constructor c;
-		try {
-			c = stateMachineClass.getConstructor(STATE_MACHINE_CONSTRUCTOR_PARAMS);
-			Object[] stateMachineParams = {states,initialState};
-			StateMachine retVal = (StateMachine) c.newInstance(stateMachineParams);
-			/* complete initialization of states and transitions */
-			retVal.comepleteInitialization(initializer);
-			return retVal;
-			
-		} catch (NoSuchMethodException|SecurityException|InstantiationException|IllegalAccessException|
-				IllegalArgumentException|InvocationTargetException e) {
-			// TODO Auto-generated catch block
-			throw new  BadStateMachineSpecification("can't create instance of state machine "+ machineName, e);
-		
-		} 
+		return builder.build();
 		
 	}
 	
-	
-	@SuppressWarnings("rawtypes")
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private Class getClass(Element theNode, String defaultClassName,Class template)
 			throws BadStateMachineSpecification {
 		Class retVal = null;

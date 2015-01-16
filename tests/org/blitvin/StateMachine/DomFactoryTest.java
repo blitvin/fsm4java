@@ -28,7 +28,7 @@ import org.blitvin.StateMachine.domfactorytest.*;
 import org.blitvin.statemachine.BadStateMachineSpecification;
 import org.blitvin.statemachine.DOMStateMachineFactory;
 import org.blitvin.statemachine.InvalidEventType;
-import org.blitvin.statemachine.StateMachine;
+import org.blitvin.statemachine.SimpleStateMachine;
 
 public class DomFactoryTest {
 
@@ -45,7 +45,7 @@ public class DomFactoryTest {
 
 	@Test
 	public void testCorrect() throws BadStateMachineSpecification, InvalidEventType {
-		StateMachine<TestEnum> machine =DOMStateMachineFactory.getDefaultFactory().getStateMachine("correctMachine");
+		SimpleStateMachine<TestEnum> machine =(SimpleStateMachine<TestEnum>)DOMStateMachineFactory.getDefaultFactory().getStateMachine("correctMachine");
 		machine.transit(new TestMachineEvent<TestEnum>(TestEnum.enum1));
 		assertEquals("state2",machine.getCurrentState().getStateName());
 		assertTrue(machine.getCurrentState().getTransitionByEvent(TestEnum.enum1) instanceof TestTransition);
@@ -59,7 +59,7 @@ public class DomFactoryTest {
 	@Test
 	public void testIncorrectEnum() {
 		try {
-			StateMachine<TestEnum> machine =DOMStateMachineFactory.getDefaultFactory().getStateMachine("incorrectEnumMachine");
+			SimpleStateMachine<TestEnum> machine =(SimpleStateMachine<TestEnum>)DOMStateMachineFactory.getDefaultFactory().getStateMachine("incorrectEnumMachine");
 			fail("machine cration should fail because of bad enum");
 		}
 		catch(BadStateMachineSpecification e){
@@ -71,7 +71,7 @@ public class DomFactoryTest {
 	@Test
 	public void testNonExistingState(){
 		try {
-			StateMachine<TestEnum> machine =DOMStateMachineFactory.getDefaultFactory().getStateMachine("nonExistingStateMachine");
+			SimpleStateMachine<TestEnum> machine =(SimpleStateMachine<TestEnum>)DOMStateMachineFactory.getDefaultFactory().getStateMachine("nonExistingStateMachine");
 			fail("machine cration should fail because of bad state");
 		}
 		catch(BadStateMachineSpecification e){
@@ -81,7 +81,7 @@ public class DomFactoryTest {
 	@Test
 	public void testBadClass(){
 		try {
-			StateMachine<TestEnum> machine =DOMStateMachineFactory.getDefaultFactory().getStateMachine("badClassMachine");
+			SimpleStateMachine<TestEnum> machine =(SimpleStateMachine<TestEnum>)DOMStateMachineFactory.getDefaultFactory().getStateMachine("badClassMachine");
 			fail("machine cration should fail because of bad state class");
 		}
 		catch(BadStateMachineSpecification e){
@@ -93,7 +93,7 @@ public class DomFactoryTest {
 	@Test
 	public void testClassNotcorrectInheriror(){
 		try {
-			StateMachine<TestEnum> machine =DOMStateMachineFactory.getDefaultFactory().getStateMachine("classNotcorrectInherirorMachine");
+			SimpleStateMachine<TestEnum> machine =(SimpleStateMachine<TestEnum>)DOMStateMachineFactory.getDefaultFactory().getStateMachine("classNotcorrectInherirorMachine");
 			fail("machine cration should fail because of class specified in as transition is not inherited from Transition");
 		}
 		catch(BadStateMachineSpecification e){
@@ -104,7 +104,7 @@ public class DomFactoryTest {
 	@Test
 	public void testEventTypeIsNotEnum(){
 		try {
-			StateMachine<TestEnum> machine =DOMStateMachineFactory.getDefaultFactory().getStateMachine("eventTypeIsNotEnumMachine");
+			SimpleStateMachine<TestEnum> machine =(SimpleStateMachine<TestEnum>)DOMStateMachineFactory.getDefaultFactory().getStateMachine("eventTypeIsNotEnumMachine");
 			fail("machine cration should fail because of bad enum class");
 		}
 		catch(BadStateMachineSpecification e){
@@ -115,7 +115,7 @@ public class DomFactoryTest {
 	@Test
 	public void testUnknownMachineName(){
 		try {
-			StateMachine<TestEnum> machine =DOMStateMachineFactory.getDefaultFactory().getStateMachine("nonExistingMachine");
+			SimpleStateMachine<TestEnum> machine =(SimpleStateMachine<TestEnum>)DOMStateMachineFactory.getDefaultFactory().getStateMachine("nonExistingMachine");
 			fail("machine cration should fail because machine with the name doesn't exist");
 		}
 		catch(BadStateMachineSpecification e){
