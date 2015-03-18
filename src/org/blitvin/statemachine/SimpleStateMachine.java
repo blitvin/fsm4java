@@ -1,19 +1,19 @@
 /*
- * (C) Copyright Boris Litvin 2014
- * This file is part of StateMachine library.
+ * (C) Copyright Boris Litvin 2014, 2015, 2015
+ * This file is part of FSM4Java library.
  *
- *  StateMachine is free software: you can redistribute it and/or modify
+ *  FSM4Java is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  *   the Free Software Foundation, either version 3 of the License, or
  *   (at your option) any later version.
  *
- *   NioServer is distributed in the hope that it will be useful,
+ *   FSM4Java is distributed in the hope that it will be useful,
  *   but WITHOUT ANY WARRANTY; without even the implied warranty of
  *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *   GNU General Public License for more details.
  *
  *   You should have received a copy of the GNU General Public License
- *   along with StateMachine.  If not, see <http://www.gnu.org/licenses/>.
+ *   along with FSM4Java  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.blitvin.statemachine;
 
@@ -65,11 +65,19 @@ public class SimpleStateMachine<EventType extends Enum<EventType>> implements St
 	 */
 	public SimpleStateMachine(HashMap<String, State<EventType>> states,State<EventType> initialState) throws BadStateMachineSpecification{
 		this.states = states;
-		if (!states.containsValue(initialState))
-			throw new BadStateMachineSpecification("initial state is not part of states map");
-		this.currentState = initialState;
+		setCurrentState(initialState);
 	}
 	
+	protected void setCurrentState(State<EventType> newCurrent) throws BadStateMachineSpecification
+	{
+		if (newCurrent != null && !states.containsValue(newCurrent))
+			throw new BadStateMachineSpecification("initial state is not part of states map");
+		this.currentState = newCurrent;
+	}
+	
+	protected Map<String,State<EventType>> getStatesMap(){
+		return states;
+	}
 	/**
 	 * Constructor doesn't require call of comepleteInitialization, but leaks not fully formed reference of the StateMachine
 	 * to State and Transition objects, which can be a problem in certain situations e.g. if stateMachineInitializedCallback
@@ -86,36 +94,7 @@ public class SimpleStateMachine<EventType extends Enum<EventType>> implements St
 		completeInitialization(initializer);
 	}
 	
-	/**
-	 * the method should be called to complete initialization of the StateMachine. initializer should contain key-value maps for each
-	 * State and Transition
-	 * @param initializer
-	 * @throws BadStateMachineSpecification thrown if something gone wrong during initialization
-	 * /
-	public void comepleteInitialization(StateMachineInitializer<EventType> initializer) throws BadStateMachineSpecification {
-		for(State<EventType> cur   : states.values()) {
-			cur.setContainingStateMachine(this);
-			cur.stateMachineInitializedCallback(initializer.getStateProperties(cur.getStateName()));
-			
-		}
-		for(State<EventType> curState : states.values()){
-			HashMap<EventType, HashMap<String, String>> map =initializer.getProperties4StateTransitions(curState.getStateName());
-			for(Entry<EventType, Transition<EventType>> curPair :curState.getTransitions().entrySet()){
-				curPair.getValue().stateMachineInitializedCallback(map.get(curPair.getKey()),this);
-			}
-		}
-	}
 	
-	public void comepleteInitialization() throws BadStateMachineSpecification  {
-		for(State<EventType> cur   : states.values()) {
-			cur.setContainingStateMachine(this);
-		}
-		for(State<EventType> curState : states.values()){
-			for(Entry<EventType, Transition<EventType>> curPair :curState.getTransitions().entrySet()){
-				curPair.getValue().stateMachineInitializedCallback(this);
-			}
-		}
-	} */
 	/**
 	 * Transit state machine to a new state according to received event
 	 * @param event 
@@ -132,7 +111,7 @@ public class SimpleStateMachine<EventType extends Enum<EventType>> implements St
 	}
 	
 	/**
-	 * 
+	 * check whether given state belongs to the state machine
 	 * @param state
 	 * @return true if state belongs to the StateMachine
 	 */
@@ -169,11 +148,20 @@ public class SimpleStateMachine<EventType extends Enum<EventType>> implements St
 		return states.get(stateName);
 	
 	}
-
+	/**
+	 * this method is second phase of state machine initialization. It is called when all the objects
+	 * are created ( by constructor), and goes through all states and then all transitions. If initializer 
+	 * contains map for the object, stateMachineInitializedCallback method with the map is called. If not 
+	 * stateMachineInitializedCallback(null) is called
+	 * @param initializer map with key object of machine ( state or transition) and value is map of key-values
+	 * to pass to given object for phase 2 initialization 
+	 */
 	@Override
 	public void completeInitialization(
 			HashMap<Object, HashMap<Object, Object>> initializer) throws BadStateMachineSpecification {
 		
+		if (currentState ==  null)
+			throw new BadStateMachineSpecification("initial state is not set");
 		if (initializationCompleted())
 			return;
 		for(State<EventType> cur   : states.values()) {
@@ -198,6 +186,10 @@ public class SimpleStateMachine<EventType extends Enum<EventType>> implements St
 		fullyInitialized = true;
 	}
 
+	
+	/**
+	 * @see org.blitvin.statemachine.StateMachine#initializationCompleted()
+	 */
 	@Override
 	public boolean initializationCompleted() {
 		return fullyInitialized;
