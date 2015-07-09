@@ -79,4 +79,12 @@ public interface StateMachine<EventType extends Enum<EventType>>{
 	 * @return true if FSM is fully initialized, that is in most cases completeInitializaiton was called
 	 */
 	boolean initializationCompleted();
+	
+	/**
+	 * This function can be invoked to notify the state machine of new event resulting from business logic processing 
+	 * (internal event) as opposite to external events coming from outside of FSM
+	 * @param internalEvent new internal event
+	 */
+	void generateInternalEvent(StateMachineEvent<EventType> internalEvent);
+	
 }

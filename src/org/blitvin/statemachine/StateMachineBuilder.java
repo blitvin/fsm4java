@@ -32,6 +32,7 @@ public class StateMachineBuilder<EventType extends Enum<EventType>> {
 	private State<EventType> initialState;
 	private Transition<EventType> lastTransition;
 	private final HashMap<String,State<EventType>> states;
+	@SuppressWarnings("unused")
 	private final String machineName;
 	private final Class <? extends StateMachine<EventType>> implClass;
 	private final HashMap<Object, HashMap<Object,Object>> initializers = new HashMap<Object, HashMap<Object,Object>>();
@@ -44,7 +45,7 @@ public class StateMachineBuilder<EventType extends Enum<EventType>> {
 	}
 	/**
 	 * This constructor allows to supply class of state machine to be built
-	 * @param name string identifying state machine. Currently is not used, and provided for  ( factories provided by the package use
+	 * @param name string identifying state machine. Currently is not used, and provided for completeness ( factories provided by the package use
 	 * state machine names for referencing) 
 	 * @param implClass class of FSM object to be built
 	 */
@@ -172,9 +173,34 @@ public class StateMachineBuilder<EventType extends Enum<EventType>> {
 	 * supplied with "toState" attribute
 	 */
 	public StateMachine<EventType> build() throws BadStateMachineSpecification{
+		@SuppressWarnings("rawtypes")
 		final Class[] constTypes = {HashMap.class, State.class};
 		try {
 			Object[] args = {states,initialState};
+			Constructor<? extends StateMachine<EventType>> constructor = implClass.getConstructor(constTypes);
+			StateMachine<EventType> retVal = (StateMachine<EventType>) constructor.newInstance(args);
+			retVal.completeInitialization(initializers);
+			return retVal;
+		} catch (NoSuchMethodException|SecurityException|InstantiationException|IllegalAccessException|
+				IllegalArgumentException|InvocationTargetException e) {
+			throw new BadStateMachineSpecification("StateMachineBuilder.build got exception during construction of state machine "+e.toString(),e); 
+		}
+	}
+	
+	/**
+	 * constructs fully initialized StateMachine object using information supplied by invocation of methods addTransitoin, 
+	 * addState etc. Note this method assumes existence of the object has constructor with arguments 
+	 * (HashMap<String,State>,State,Object)
+	 * @param additional parameters passed to the state machine object constructor
+	 * @return fully initialized state machine
+	 * @throws BadStateMachineSpecification if state machine can't be constructed e.g. transition of type SimpleTransition was not
+	 * supplied with "toState" attribute
+	 */
+	public StateMachine<EventType> build(Object constructorArgs) throws BadStateMachineSpecification{
+		@SuppressWarnings("rawtypes")
+		final Class[] constTypes = {HashMap.class, State.class, Object.class};
+		try {
+			Object[] args = {states,initialState, constructorArgs};
 			Constructor<? extends StateMachine<EventType>> constructor = implClass.getConstructor(constTypes);
 			StateMachine<EventType> retVal = (StateMachine<EventType>) constructor.newInstance(args);
 			retVal.completeInitialization(initializers);

@@ -108,7 +108,6 @@ public class State<EventType extends Enum<EventType>> {
 	 * @param prevState previous current state
 	 */
 	public void stateBecomesCurrentCallback(StateMachineEvent<EventType> theEvent, State<EventType> prevState){
-		
 	}
 	
 	/**
@@ -134,6 +133,11 @@ public class State<EventType extends Enum<EventType>> {
 	 */
 	public void stateMachineInitializedCallback(Map<Object,Object>  initializer) throws BadStateMachineSpecification
 	{
+	}
+	
+	@Override
+	public String toString(){
+		return stateName+'['+this.getClass().getSimpleName()+']';
 	}
 	
 }

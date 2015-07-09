@@ -22,6 +22,7 @@ import java.util.Map;
 /**
  * SimpleTransition is default transition implementation. It represents transition to predefined state
  * the state can be given explicitly or it's name can be passed in initializer in value for key "toState"
+ * To make the target be the same state as current (and not call state callbacks) provide toState=""
  * @author blitvin
  *
  * @param <EventType> state machine alphabet
@@ -82,24 +83,33 @@ public class SimpleTransition<EventType extends Enum<EventType>> extends Transit
 		if (targetStateName == null|| containingMachine == null) {
 			throw new BadStateMachineSpecification("SimpleTransaction requires at least state name and containing machine");
 		}
-			
+		
 		targetState = containingMachine.getStateByName(targetStateName);
 		
 		if (targetState == null)
 			throw new BadStateMachineSpecification("Can't find state with name "+ targetStateName );
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public void stateMachineInitializedCallback(Map<Object,Object>  initializer,
 			StateMachine<EventType> containingMachine)
 			throws BadStateMachineSpecification {
 		this.containingMachine = containingMachine;
-		targetStateName = (String)initializer.get(TARGET_STATE);
-		if (targetStateName == null) 
-			throw new BadStateMachineSpecification("SimpleTransaction : target state name is not specified");
-		
-		if ((targetState = containingMachine.getStateByName(targetStateName)) == null) {
-			throw new BadStateMachineSpecification("SimpleTransaction : can't find state with name "+targetStateName);
+		Object targetStateObj = initializer.get(TARGET_STATE);
+		if (targetStateObj == null) 
+			throw new BadStateMachineSpecification("SimpleTransaction : target state is not specified");
+		if (targetStateObj instanceof String) {
+			targetStateName = (String) targetStateObj;
+			
+			if (targetStateName.length() == 0)
+				targetState = null;
+			else if ((targetState = containingMachine.getStateByName(targetStateName)) == null) {
+				throw new BadStateMachineSpecification("SimpleTransaction : can't find state with name "+targetStateName);
+			}
+		} else {
+			targetState = (State<EventType>) targetStateObj;
+			targetStateName = targetState.getStateName();
 		}
 	}
 

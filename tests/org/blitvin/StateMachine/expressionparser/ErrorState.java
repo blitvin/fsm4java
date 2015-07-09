@@ -15,25 +15,24 @@
  *   You should have received a copy of the GNU General Public License
  *   along with FSM4Java  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.blitvin.statemachine;
 
-/**
- * BadStateSpecification is exception thrown by state machine factory upon 
- * encounter of problems during state machine constructor. In most case original
- * cause (e.g. IllegalArgumentException in attempt to convert string to enum constant
- *  during parsing of machine specification by DOMStateMachineFactory)
- * @author blitvin
- *
- */
-public class BadStateMachineSpecification extends Exception {
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
-	public BadStateMachineSpecification(String msg, Exception ex){
-		super(msg,ex);
+package org.blitvin.statemachine.expressionparser;
+
+import org.blitvin.statemachine.State;
+import org.blitvin.statemachine.StateMachineEvent;
+import org.blitvin.statemachine.expressionparser.TokenizerFSM.Token;
+
+public class ErrorState extends State<TokensEnum> {
+
+	public ErrorState(String stateName, Boolean isFinal) {
+		super(stateName, isFinal);
 	}
-	public BadStateMachineSpecification(String msg){
-		super(msg);
+	
+	@Override
+	public void stateBecomesCurrentCallback(StateMachineEvent<TokensEnum> theEvent, State<TokensEnum> prevState){
+		Token errToken = (Token)theEvent;
+		throw new ExpressionParserException("Unexpected symbol "+errToken.value(), 
+				ExpressionParserException.UNEXPECTED_SYMBOL, errToken.getPosition());
 	}
+
 }

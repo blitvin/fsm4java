@@ -219,12 +219,12 @@ public class DOMStateMachineFactory extends	StateMachineFactory {
 	 * each invocation creates machine with distinct set of states and transitions (no sharing of
 	 * states among instances of machine created from the same specification)
 	 * @param machineName name of state machine as specified by name attribute of StateMachine entry
+	 * @param constructorArguments object containing additional parameters to be passed to state machine's constructor
 	 * @return new instance of the machine constructed according to XML file's specifications
 	 * @throws BadStateMachineSpecification if construction failed for any reason
 	 */
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	@Override
-	public StateMachine getStateMachine(String machineName) throws BadStateMachineSpecification {
+	public StateMachine getStateMachine(String machineName, Object construcorArguments) throws BadStateMachineSpecification {
 		Node stateMachineNode = stateMachineSpecs.get(machineName);
 		if (stateMachineNode == null)
 			throw new BadStateMachineSpecification("Unknown state machine name:"+machineName);
@@ -283,10 +283,26 @@ public class DOMStateMachineFactory extends	StateMachineFactory {
 			}
 			
 		}
-		return builder.build();
+		if (construcorArguments == null)
+			return builder.build();
+		else
+			return builder.build(construcorArguments);
 		
 	}
 	
+	/**
+	 * returns instance of state machine
+	 * each invocation creates machine with distinct set of states and transitions (no sharing of
+	 * states among instances of machine created from the same specification)
+	 * @param machineName name of state machine as specified by name attribute of StateMachine entry
+	 * @return new instance of the machine constructed according to XML file's specifications
+	 * @throws BadStateMachineSpecification if construction failed for any reason
+	 */
+	@SuppressWarnings({ "rawtypes" })
+	@Override
+	public StateMachine getStateMachine(String machineName) throws BadStateMachineSpecification {
+		return getStateMachine(machineName,null);
+	}
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private Class getClass(Element theNode, String defaultClassName,Class template)
 			throws BadStateMachineSpecification {

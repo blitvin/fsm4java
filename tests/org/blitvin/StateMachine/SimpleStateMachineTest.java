@@ -1,8 +1,8 @@
 /*
- * (C) Copyright Boris Litvin 2014
+ * (C) Copyright Boris Litvin 2014, 2015
  * This file is part of tests of StateMachine library.
  *
- *  StateMachine is free software: you can redistribute it and/or modify
+ *  FSM4Java is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  *   the Free Software Foundation, either version 3 of the License, or
  *   (at your option) any later version.
@@ -13,7 +13,7 @@
  *   GNU General Public License for more details.
  *
  *   You should have received a copy of the GNU General Public License
- *   along with StateMachine.  If not, see <http://www.gnu.org/licenses/>.
+ *   along with FSM4Java  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.blitvin.statemachine;
 

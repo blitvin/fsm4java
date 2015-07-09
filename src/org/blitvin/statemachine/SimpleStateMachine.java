@@ -1,5 +1,5 @@
 /*
- * (C) Copyright Boris Litvin 2014, 2015, 2015
+ * (C) Copyright Boris Litvin 2014, 2015
  * This file is part of FSM4Java library.
  *
  *  FSM4Java is free software: you can redistribute it and/or modify
@@ -20,7 +20,6 @@ package org.blitvin.statemachine;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 
 /**
  * State machine is implementation of CS state machine with adaptations to allow it
@@ -51,9 +50,10 @@ import java.util.Map.Entry;
  * @param <EventType> state machine's alphabet
  */
 public class SimpleStateMachine<EventType extends Enum<EventType>> implements StateMachine<EventType>{
-	private final Map<String,State<EventType>> states;
-	private State<EventType> currentState;
+	protected final Map<String,State<EventType>> states;
+	protected State<EventType> currentState;
 	private boolean fullyInitialized = false;
+	protected StateMachineEvent<EventType> event2Proceed=null;
 	
 	/**
 	 * constructor that doesn't  fully initializes state  machine. You should call comepleteInitialization with appropriate
@@ -96,18 +96,25 @@ public class SimpleStateMachine<EventType extends Enum<EventType>> implements St
 	
 	
 	/**
-	 * Transit state machine to a new state according to received event
+	 * Transit state machine to a new state according to received event.
+	 * if currentState.transit() returns null, it assumed that current state doesn't change , and callbacks are not called.
+	 * This is a way to differentiate between transition going back and requiring callbacks and one that doesn't
 	 * @param event 
 	 * @throws InvalidEventType thrown if event type is invalid for current state
 	 */
 	@Override
 	public void transit(StateMachineEvent<EventType> event) throws InvalidEventType{
-		State<EventType> newState = currentState.transit(event);
-		if (newState != null) {
-			currentState.otherStateBecomesCurrentCallback(event, newState);
-			newState.stateBecomesCurrentCallback(event, currentState);
-			currentState = newState;
-		}
+		event2Proceed = event;
+		do {
+			State<EventType> newState = currentState.transit(event2Proceed);
+			event2Proceed = null; 
+			if (newState != null) {
+				currentState.otherStateBecomesCurrentCallback(event, newState);
+				State<EventType> prevState = currentState;
+				currentState = newState;
+				currentState.stateBecomesCurrentCallback(event, prevState);
+			}
+		}while( event2Proceed != null);
 	}
 	
 	/**
@@ -193,5 +200,10 @@ public class SimpleStateMachine<EventType extends Enum<EventType>> implements St
 	@Override
 	public boolean initializationCompleted() {
 		return fullyInitialized;
+	}
+
+	@Override
+	public void generateInternalEvent(StateMachineEvent<EventType> internalEvent) {
+			event2Proceed = internalEvent;
 	}	
 }
