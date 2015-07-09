@@ -200,9 +200,9 @@ on the fly. To make example simpler I made it not to store entire expression tre
 
 Here is State machine diagrams
 
-![TokenizerFSM](https://github.com/blitvin/fsm4java/TokenizerFSM.jpg "Tokenizer")
+![TokenizerFSM](https://github.com/blitvin/fsm4java/blob/master/TokenizerFSM.jpg "Tokenizer")
 
-![ExpressionTreeFSM](https://github.com/blitvin/fsm4java/ExpressionTreeFSM.jpg "Expression tree parser")
+![ExpressionTreeFSM](https://github.com/blitvin/fsm4java/blob/master/ExpressionTreeFSM.jpg "Expression tree parser")
 
 Let's see what each FSM does:
 Sometimes decomposition of task to several "simpler" state machines brings clearer code, like in this case.
