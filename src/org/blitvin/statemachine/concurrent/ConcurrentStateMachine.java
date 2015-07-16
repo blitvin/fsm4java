@@ -21,7 +21,11 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.blitvin.statemachine.BadStateMachineSpecification;
 import org.blitvin.statemachine.InvalidEventType;
@@ -55,7 +59,7 @@ public class ConcurrentStateMachine<EventType extends Enum<EventType>> implement
 		this.queue = new LinkedBlockingQueue<EventQueueEntry<EventType>>();
 		this.wrapper = new StateMachineWrapper<>(queue, machine);
 	}
-	private static class EventQueueEntry<EventType extends Enum<EventType>> {
+	private static class EventQueueEntry<EventType extends Enum<EventType>> implements Future<StampedState<EventType>>{
 		private final StateMachineEvent<EventType> event;
 		private final int stamp;
 		private final CountDownLatch latch;
@@ -80,6 +84,44 @@ public class ConcurrentStateMachine<EventType extends Enum<EventType>> implement
 		void releaseLatch(){
 			if (latch != null)
 				latch.countDown();
+		}
+
+		@Override
+		public boolean cancel(boolean mayInterruptIfRunning) {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
+		@Override
+		public boolean isCancelled() {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
+		@Override
+		public boolean isDone() {
+			try {
+				return latch.await(0, TimeUnit.SECONDS);
+			} catch (InterruptedException e) {
+				return false;
+			}
+		}
+
+		@Override
+		public StampedState<EventType> get() throws InterruptedException,
+				ExecutionException {
+			latch.await();
+			return resultingState;
+		}
+
+		@Override
+		public StampedState<EventType> get(long timeout, TimeUnit unit)
+				throws InterruptedException, ExecutionException,
+				TimeoutException {
+			if (latch.await(timeout, unit))
+				return resultingState;
+			else
+				return null;
 		}
 	}
 	
@@ -143,6 +185,17 @@ public class ConcurrentStateMachine<EventType extends Enum<EventType>> implement
 	 */
 	public void asyncTransit(StateMachineEvent<EventType> event){
 		queue.add(new EventQueueEntry<>(event, 0, null));
+	}
+	
+	/**
+	 * send event to FSM and get Future object for obtaining result when available
+	 * @param event event to process
+	 * @return Future returning state when event is processed
+	 */
+	public Future<StampedState<EventType>> asyncTransitAndGetFutureState(StateMachineEvent<EventType> event){
+		EventQueueEntry<EventType> retVal=  new EventQueueEntry<>(event,0, new CountDownLatch(1));
+		queue.add(retVal);
+		return retVal;
 	}
 	/**
 	 * send event to the state and pause until processing is completed. Return StampedState object representing new state of the
@@ -262,6 +315,17 @@ public class ConcurrentStateMachine<EventType extends Enum<EventType>> implement
 	 */
 	public void shutDown(){
 		wrapper.interrupt();
+	}
+	@Override
+	public void generateInternalEvent(StateMachineEvent<EventType> internalEvent) {
+		
+		try {
+			CAStransit(internalEvent, 0);
+		} catch (InvalidEventType e) {
+			throw new StateMachineMultiThreadingException(e);
+		}
+		
+		
 	}
 
 }

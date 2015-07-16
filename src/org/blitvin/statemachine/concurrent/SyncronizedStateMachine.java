@@ -84,5 +84,12 @@ public class SyncronizedStateMachine<EventType extends Enum<EventType>> implemen
 	public synchronized boolean initializationCompleted() {
 		return implementation.initializationCompleted();
 	}
+	@Override
+	public void generateInternalEvent(StateMachineEvent<EventType> internalEvent) {
+		synchronized (this) {
+			implementation.generateInternalEvent(internalEvent);
+		} 
+		
+	}
 
 }
