@@ -58,14 +58,17 @@ public class StateMachineBuilder<EventType extends Enum<EventType>> {
 	}
 	
 	
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	/**
 	 * This constructor assumes SimpleStateMachine class
 	 * @param name name string identifying state machine. Currently is not used, and provided for  ( factories provided by the package use
 	 * state machine names for referencing) 
 	 */
 	public StateMachineBuilder(String name){
-		this(name,(Class<? extends StateMachine<EventType>>) SimpleStateMachine.class);
+		this(name,(Class)SimpleStateMachine.class);
+		/* this(name,(Class<? extends StateMachine<EventType>>) SimpleStateMachine.class);
+		 * for some reason the above line doesn't compile in JDK1.8, even though it is OK in 1.6 and 1.7..
+		 */
 	}
 	
 	public StateMachineBuilder<EventType> addState(State<EventType> newState){
