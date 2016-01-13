@@ -29,7 +29,7 @@ public class ErrorState extends State<TokensEnum> {
 	}
 	
 	@Override
-	public void stateBecomesCurrentCallback(StateMachineEvent<TokensEnum> theEvent, State<TokensEnum> prevState){
+	public void onStateBecomesCurrent(StateMachineEvent<TokensEnum> theEvent, State<TokensEnum> prevState){
 		Token errToken = (Token)theEvent;
 		throw new ExpressionParserException("Unexpected symbol "+errToken.value(), 
 				ExpressionParserException.UNEXPECTED_SYMBOL, errToken.getPosition());

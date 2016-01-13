@@ -53,25 +53,25 @@ public class AspectEnabledStateMachine<EventType extends Enum<EventType>> extend
 	 */
 	@Override
 	public void transit(StateMachineEvent<EventType> event) throws InvalidEventType{
-		if (aspects != null &&!aspects.startTransition(event)) return;
+		if (aspects != null &&!aspects.onTransitionStart(event)) return;
 		event2Proceed = event;
 		do {
 			State<EventType> newState = currentState.transit(event);
 			event2Proceed = null;
 			if (newState != null) {
-				if (aspects != null && !aspects.otherStateBecomesCurrent(event,currentState,newState))
+				if (aspects != null && !aspects.onControlLeavesState(event,currentState,newState))
 					return;
-				currentState.otherStateBecomesCurrentCallback(event, newState);
+				currentState.onStateIsNoLongerCurrent(event, newState);
 				State<EventType> prevState = currentState;
 				currentState = newState;
-				if (aspects != null && !aspects.stateBecomesCurrent(event,currentState,prevState))
+				if (aspects != null && !aspects.onControlEntersState(event,currentState,prevState))
 					return;
-				currentState.stateBecomesCurrentCallback(event, prevState);
+				currentState.onStateBecomesCurrent(event, prevState);
 				if (aspects != null )
-					aspects.endTransition(event, currentState, prevState);
+					aspects.onTransitionFinish(event, currentState, prevState);
 			} else {
 				if (aspects != null)
-					aspects.nullTransition(event);
+					aspects.onNullTransition(event);
 			}
 		}while( event2Proceed != null);
 		

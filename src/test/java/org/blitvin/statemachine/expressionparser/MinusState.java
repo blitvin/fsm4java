@@ -38,12 +38,12 @@ public class MinusState extends State<TokensEnum> {
 	
 	
 	@Override
-	public void stateBecomesCurrentCallback(StateMachineEvent<TokensEnum> theEvent, State<TokensEnum> prevState){
+	public void onStateBecomesCurrent(StateMachineEvent<TokensEnum> theEvent, State<TokensEnum> prevState){
 		minusPosition = ((TokenizerFSM.Token)theEvent).getPosition();
 	}
 
 	@Override
-	public void otherStateBecomesCurrentCallback(StateMachineEvent<TokensEnum> theEvent, State<TokensEnum> nextState){
+	public void onStateIsNoLongerCurrent(StateMachineEvent<TokensEnum> theEvent, State<TokensEnum> nextState){
 		if (nextState != digitState) {
 			if (theEvent.getEventType() == TokensEnum.OTHER)
 				return;
@@ -60,9 +60,9 @@ public class MinusState extends State<TokensEnum> {
 	}
 
 	@Override
-	public void stateMachineInitializedCallback(Map<Object,Object>  initializer) throws BadStateMachineSpecification
+	public void onStateMachineInitialized(Map<Object,Object>  initializer) throws BadStateMachineSpecification
 	{
-		super.stateMachineInitializedCallback(initializer);
+		super.onStateMachineInitialized(initializer);
 		digitState = getContatiningStateMachine().getStateByName(TokenizerFSM.DigitStateName);
 		if (digitState == null)
 			throw new BadStateMachineSpecification("Cannot find state "+TokenizerFSM.DigitStateName);

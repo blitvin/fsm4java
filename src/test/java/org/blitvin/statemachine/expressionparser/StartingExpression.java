@@ -33,14 +33,14 @@ public class StartingExpression extends State<SyntaxTokensEnum> {
 	}
 	
 	@Override
-	public void stateBecomesCurrentCallback(StateMachineEvent<SyntaxTokensEnum> theEvent, State<SyntaxTokensEnum> prevState){
+	public void onStateBecomesCurrent(StateMachineEvent<SyntaxTokensEnum> theEvent, State<SyntaxTokensEnum> prevState){
 		ExpressionNode node = new ExpressionNode();
 		node.parent = fsm.curFactor;
 		fsm.curExpression = node;
 	}
 	
 	@Override
-	public void stateMachineInitializedCallback(Map<Object,Object>  initializer) throws BadStateMachineSpecification
+	public void onStateMachineInitialized(Map<Object,Object>  initializer) throws BadStateMachineSpecification
 	{
 		fsm = (ExpressionTreeFSM) getContatiningStateMachine();
 	}

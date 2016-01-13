@@ -51,7 +51,7 @@ public class Expression extends State<SyntaxTokensEnum> {
 		}
 	}
 	@Override
-	public void stateBecomesCurrentCallback(StateMachineEvent<SyntaxTokensEnum> theEvent, State<SyntaxTokensEnum> prevState){
+	public void onStateBecomesCurrent(StateMachineEvent<SyntaxTokensEnum> theEvent, State<SyntaxTokensEnum> prevState){
 	
 		switch(theEvent.getEventType()) {
 		case CLOSING_BRACKET:
@@ -75,7 +75,7 @@ public class Expression extends State<SyntaxTokensEnum> {
 	}
 	
 	@Override
-	public void stateMachineInitializedCallback(Map<Object,Object>  initializer) throws BadStateMachineSpecification
+	public void onStateMachineInitialized(Map<Object,Object>  initializer) throws BadStateMachineSpecification
 	{
 		fsm = (ExpressionTreeFSM) getContatiningStateMachine();
 	}

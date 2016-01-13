@@ -18,7 +18,7 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class ExpressionParserPositiveTests {
+public class ExpressionParserPositiveTest {
 
 	static DOMStateMachineFactory factory;
 	
@@ -53,7 +53,7 @@ public class ExpressionParserPositiveTests {
 	ExpressionTreeFSM expressionTreeFSM;
 	StringReader reader;
 	
-	public ExpressionParserPositiveTests(String expression, Integer expectedValue)  {
+	public ExpressionParserPositiveTest(String expression, Integer expectedValue)  {
 		expectedResult = expectedValue.intValue();
 		reader = new StringReader(expression);
 		

@@ -19,7 +19,7 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class ExpressionParserNegativeTests {
+public class ExpressionParserNegativeTest {
 
 	
 	static DOMStateMachineFactory factory;
@@ -53,7 +53,7 @@ public class ExpressionParserNegativeTests {
 	TokenizerFSM fsm;
 	ExpressionTreeFSM expressionTreeFSM;
 	StringReader reader;
-	public ExpressionParserNegativeTests(String expression, Integer errorCode, Integer position) {
+	public ExpressionParserNegativeTest(String expression, Integer errorCode, Integer position) {
 		reader = new StringReader(expression);
 		this.position = position.intValue();
 		this.errorCode = errorCode.intValue();

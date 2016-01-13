@@ -31,21 +31,21 @@ public interface StateMachineAspects <EventType extends Enum<EventType>>{
 	 * @param event that triggered the transition
 	 * @return true in order to proceed with the transition
 	 */
-	boolean startTransition(StateMachineEvent<EventType> event);
+	boolean onTransitionStart(StateMachineEvent<EventType> event);
 	/**
 	 * Invoked if transition returned null ( that is transition from and to current state  without
 	 * need to invoke callbacks for the transition processing)
 	 * @param event that triggered the transition
 	 */
-	void nullTransition(StateMachineEvent<EventType> event);
+	void onNullTransition(StateMachineEvent<EventType> event);
 	/**
-	 * This method invoked before 'otherStateBecomesCurrent' callback of current state's  
+	 * This method invoked before 'onControlEntersState' callback of current state's  
 	 * @param event that triggered the transition
 	 * @param currentState current state
 	 * @param newState target state
 	 * @return true to continue processing, false to stop processing of the event
 	 */
-	boolean otherStateBecomesCurrent(StateMachineEvent<EventType> event, 
+	boolean onControlLeavesState(StateMachineEvent<EventType> event, 
 				State<EventType>currentState,State<EventType> newState);
 	/**
 	 * This method invoked before 'stateBecomesCurrent' callback of target state
@@ -54,7 +54,7 @@ public interface StateMachineAspects <EventType extends Enum<EventType>>{
 	 * @param prevState  original state (i.e. current state before the transition)
 	 * @return true to continue processing, false to stop the processing
 	 */
-	boolean stateBecomesCurrent(StateMachineEvent<EventType> event, 
+	boolean onControlEntersState(StateMachineEvent<EventType> event, 
 				State<EventType>currentState,State<EventType> prevState);
 	/**
 	 * End of transition processing aspect. called after target state become current
@@ -62,7 +62,7 @@ public interface StateMachineAspects <EventType extends Enum<EventType>>{
 	 * @param currentState new (target) state, that has become current
 	 * @param prevState current state before transition
 	 */
-	void endTransition(StateMachineEvent<EventType> event, 
+	void onTransitionFinish(StateMachineEvent<EventType> event, 
 				State<EventType>currentState,State<EventType> prevState);
 	/**
 	 * callback for specifying containing machine ( this may be usefull for aspects to access FSM the aspect object associated with)

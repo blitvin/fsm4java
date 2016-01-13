@@ -32,13 +32,13 @@ public class StartingFactor extends State<SyntaxTokensEnum> {
 	}
 	
 	@Override
-	public void stateMachineInitializedCallback(Map<Object,Object>  initializer) throws BadStateMachineSpecification
+	public void onStateMachineInitialized(Map<Object,Object>  initializer) throws BadStateMachineSpecification
 	{
 		fsm = (ExpressionTreeFSM) getContatiningStateMachine();
 	}
 
 	@Override
-	public void stateBecomesCurrentCallback(StateMachineEvent<SyntaxTokensEnum> theEvent, State<SyntaxTokensEnum> prevState){
+	public void onStateBecomesCurrent(StateMachineEvent<SyntaxTokensEnum> theEvent, State<SyntaxTokensEnum> prevState){
 		FactorNode node = new FactorNode();
 		node.parent = fsm.curExpression;
 		fsm.curFactor = node;

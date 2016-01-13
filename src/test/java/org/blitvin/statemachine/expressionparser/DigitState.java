@@ -39,7 +39,7 @@ public class DigitState extends State<TokensEnum> {
 	}
  	
 	@Override
-	public void stateBecomesCurrentCallback(StateMachineEvent<TokensEnum> theEvent, State<TokensEnum> prevState){
+	public void onStateBecomesCurrent(StateMachineEvent<TokensEnum> theEvent, State<TokensEnum> prevState){
 		if (prevState != this) { // start of number literal
 			TokenizerFSM.Token curToken = (TokenizerFSM.Token) theEvent;
 			absValue = curToken.value() - '0';
@@ -56,7 +56,7 @@ public class DigitState extends State<TokensEnum> {
 	}
 	
 	@Override
-	public void otherStateBecomesCurrentCallback(StateMachineEvent<TokensEnum> theEvent, State<TokensEnum> nextState){
+	public void onStateIsNoLongerCurrent(StateMachineEvent<TokensEnum> theEvent, State<TokensEnum> nextState){
 		if ( nextState != this) { //end of number literal
 			if (theEvent.getEventType() == TokensEnum.OTHER)
 				return;
@@ -72,9 +72,9 @@ public class DigitState extends State<TokensEnum> {
 	}
 
 	@Override
-	public void stateMachineInitializedCallback(Map<Object,Object>  initializer) throws BadStateMachineSpecification
+	public void onStateMachineInitialized(Map<Object,Object>  initializer) throws BadStateMachineSpecification
 	{
-		super.stateMachineInitializedCallback(initializer);
+		super.onStateMachineInitialized(initializer);
 		minusState = getContatiningStateMachine().getStateByName(TokenizerFSM.MinusStateName);
 		if (minusState == null)
 			throw new BadStateMachineSpecification("Cannot find state "+TokenizerFSM.MinusStateName);

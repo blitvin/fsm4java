@@ -28,7 +28,7 @@ public class SyntaxError extends State<SyntaxTokensEnum> {
 	}
 	
 	@Override
-	public void stateBecomesCurrentCallback(StateMachineEvent<SyntaxTokensEnum> theEvent, State<SyntaxTokensEnum> prevState){
+	public void onStateBecomesCurrent(StateMachineEvent<SyntaxTokensEnum> theEvent, State<SyntaxTokensEnum> prevState){
 		SyntaxToken tok = (SyntaxToken) theEvent;
 		if (tok.getEventType() == SyntaxTokensEnum.END_OF_INPUT)
 			throw new ExpressionParserException("unexpected end of input ", ExpressionParserException.END_OF_INPUT,tok.position);

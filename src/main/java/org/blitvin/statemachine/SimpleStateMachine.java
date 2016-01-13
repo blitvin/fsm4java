@@ -109,10 +109,10 @@ public class SimpleStateMachine<EventType extends Enum<EventType>> implements St
 			State<EventType> newState = currentState.transit(event2Proceed);
 			event2Proceed = null; 
 			if (newState != null) {
-				currentState.otherStateBecomesCurrentCallback(event, newState);
+				currentState.onStateIsNoLongerCurrent(event, newState);
 				State<EventType> prevState = currentState;
 				currentState = newState;
-				currentState.stateBecomesCurrentCallback(event, prevState);
+				currentState.onStateBecomesCurrent(event, prevState);
 			}
 		}while( event2Proceed != null);
 	}
@@ -174,10 +174,10 @@ public class SimpleStateMachine<EventType extends Enum<EventType>> implements St
 		for(State<EventType> cur   : states.values()) {
 			cur.setContainingStateMachine(this);
 			if (initializer != null) {
-				cur.stateMachineInitializedCallback(initializer.get(cur));
+				cur.onStateMachineInitialized(initializer.get(cur));
 			}
 			else
-				cur.stateMachineInitializedCallback(null);
+				cur.onStateMachineInitialized(null);
 		}
 		
 		for(State<EventType> curState : states.values()) {

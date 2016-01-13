@@ -26,19 +26,19 @@ import org.blitvin.statemachine.StateMachineEvent;
 public class ExpressionTreeAspect implements StateMachineAspects<SyntaxTokensEnum> {
 
 	@Override
-	public boolean startTransition(StateMachineEvent<SyntaxTokensEnum> event) {
+	public boolean onTransitionStart(StateMachineEvent<SyntaxTokensEnum> event) {
 		System.out.println("starting transition with token "+ event);
 		return true;
 	}
 
 	@Override
-	public void nullTransition(StateMachineEvent<SyntaxTokensEnum> event) {
+	public void onNullTransition(StateMachineEvent<SyntaxTokensEnum> event) {
 		System.out.println("null transition with event "+event);
 		
 	}
 
 	@Override
-	public boolean otherStateBecomesCurrent(
+	public boolean onControlLeavesState(
 			StateMachineEvent<SyntaxTokensEnum> event,
 			State<SyntaxTokensEnum> currentState,
 			State<SyntaxTokensEnum> newState) {
@@ -47,7 +47,7 @@ public class ExpressionTreeAspect implements StateMachineAspects<SyntaxTokensEnu
 	}
 
 	@Override
-	public boolean stateBecomesCurrent(
+	public boolean onControlEntersState(
 			StateMachineEvent<SyntaxTokensEnum> event,
 			State<SyntaxTokensEnum> currentState,
 			State<SyntaxTokensEnum> prevState) {
@@ -56,7 +56,7 @@ public class ExpressionTreeAspect implements StateMachineAspects<SyntaxTokensEnu
 	}
 
 	@Override
-	public void endTransition(StateMachineEvent<SyntaxTokensEnum> event,
+	public void onTransitionFinish(StateMachineEvent<SyntaxTokensEnum> event,
 			State<SyntaxTokensEnum> currentState,
 			State<SyntaxTokensEnum> prevState) {
 		//System.out.println("send transition "+event +" cur state "+currentState + " prev state" + prevState);

@@ -34,7 +34,7 @@ public class RegularState extends State<TokensEnum> {
 	
 	
 	@Override
-	public void stateBecomesCurrentCallback(StateMachineEvent<TokensEnum> theEvent, State<TokensEnum> prevState){
+	public void onStateBecomesCurrent(StateMachineEvent<TokensEnum> theEvent, State<TokensEnum> prevState){
 		if (theEvent.getEventType() != TokensEnum.WHITESPACE) {
 			if (syntaxFSM == null) {
 				syntaxFSM = ((TokenizerFSM)getContatiningStateMachine()).syntaxFSM;

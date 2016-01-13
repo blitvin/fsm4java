@@ -32,11 +32,11 @@ public class MultDivState extends State<SyntaxTokensEnum> {
 	}
 	
 	@Override
-	public void stateBecomesCurrentCallback(StateMachineEvent<SyntaxTokensEnum> theEvent, State<SyntaxTokensEnum> prevState){
+	public void onStateBecomesCurrent(StateMachineEvent<SyntaxTokensEnum> theEvent, State<SyntaxTokensEnum> prevState){
 		fsm.curFactor.lastOpIsMult =((SyntaxToken.MultDivToken)theEvent).isMultiplication;
 	}
 	@Override
-	public void stateMachineInitializedCallback(Map<Object,Object>  initializer) throws BadStateMachineSpecification
+	public void onStateMachineInitialized(Map<Object,Object>  initializer) throws BadStateMachineSpecification
 	{
 		fsm = (ExpressionTreeFSM) getContatiningStateMachine();
 	}

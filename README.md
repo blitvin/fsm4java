@@ -46,8 +46,8 @@ in. Events fed to the state machine by invocation of *transit(StateMachineEvent)
 FSM implementation. *SimpleStateMachine* performs the following upon invocation of the method:
 
 * it looks up transition corresponding for current state and current event. If no such transition exist (that is neither explicit nor implicit transition defined) *IllegalEventType* exception is thrown.
-* *otherStateBecomesCurrentCallback()* method is invoked on current state
-* *stateBecomesCurrentCallback()* method is invoked on state returned by transition
+* *onStateIsNoLongerCurrent()* method is invoked on current state
+* *onStateBecomesCurrent()* method is invoked on state returned by transition
 * the state returned by transition becomes current state
 
 Proper way to create state machine for your need is extend *State* by overriding callback methods and/or create implementation of Transition doing your logic.
@@ -310,13 +310,13 @@ run code at certain predefined points of transition. Aspects code should be plac
 *AspectEnabledStateMachine* has method *setAspects* setting code for appropriate points, after the object passed to the state machine, appropriate
 methods are called at following points of transition:
 
-* *startTransition* at beginning of transition
-* *nullTransition* if transition is null one i.e. current state's transit function returns null
-* *otherStateBecomesCurrent* is called before  'otherStateBecomesCurrent' callback of current state's
-* *stateBecomesCurrent* is called before 'stateBecomesCurrent' callback of target state
-* *endTransition* is called before transition processing ends ( it is not called if the transition is null transition)
+* *onTransitionStart* at beginning of transition
+* *onNullTransition* if transition is null one i.e. current state's transit function returns null
+* *onControlLeavesState* is called before  'onStateIsNoLongerCurrent' callback of current state's
+* *onControlEntersState* is called before 'onStateBecomesCurrent' callback of target state
+* *onTransitionFinish* is called before transition processing ends ( it is not called if the transition is null transition)
 
-All methods except for nullTransition and endTransition return boolean. If those return false processing of the transition halted.
+All methods except for onNullTransition and onTransitionFinish return boolean. If those return false processing of the transition halted.
 
 ## Thread safe state machines: SynchronizedStateMachine and ConcurrentStateMachine
 

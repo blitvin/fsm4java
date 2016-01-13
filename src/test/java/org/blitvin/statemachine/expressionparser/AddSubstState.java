@@ -33,11 +33,11 @@ public class AddSubstState extends State<SyntaxTokensEnum> {
 	}
 	
 	@Override
-	public void stateBecomesCurrentCallback(StateMachineEvent<SyntaxTokensEnum> theEvent, State<SyntaxTokensEnum> prevState){
+	public void onStateBecomesCurrent(StateMachineEvent<SyntaxTokensEnum> theEvent, State<SyntaxTokensEnum> prevState){
 		fsm.curExpression.lastOpIsAdd =((SyntaxToken.AddSubstToken)theEvent).isAddition;
 	}
 	@Override
-	public void stateMachineInitializedCallback(Map<Object,Object>  initializer) throws BadStateMachineSpecification
+	public void onStateMachineInitialized(Map<Object,Object>  initializer) throws BadStateMachineSpecification
 	{
 		fsm = (ExpressionTreeFSM) getContatiningStateMachine();
 	}

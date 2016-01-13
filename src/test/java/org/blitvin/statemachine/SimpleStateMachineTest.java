@@ -19,13 +19,6 @@ package org.blitvin.statemachine;
 
 import java.util.HashMap;
 
-import org.blitvin.statemachine.BadStateMachineSpecification;
-import org.blitvin.statemachine.InvalidEventType;
-import org.blitvin.statemachine.SimpleTransition;
-import org.blitvin.statemachine.State;
-import org.blitvin.statemachine.SimpleStateMachine;
-import org.blitvin.statemachine.StateMachineEvent;
-import org.blitvin.statemachine.Transition;
 
 enum STM_EVENTS {
 	STM_A, STM_B, STM_C

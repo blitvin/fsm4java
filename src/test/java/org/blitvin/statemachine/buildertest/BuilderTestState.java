@@ -14,7 +14,7 @@ public class BuilderTestState<EventType extends Enum<EventType>> extends State<E
 	}
 	
 	@Override
-	public void stateMachineInitializedCallback(Map<Object,Object>  initializer) throws BadStateMachineSpecification
+	public void onStateMachineInitialized(Map<Object,Object>  initializer) throws BadStateMachineSpecification
 	{
 		myAttribute = (String) initializer.get("myAttribute");
 	}
