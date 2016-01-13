@@ -61,7 +61,7 @@ public class State<EventType extends Enum<EventType>> {
 	}
 	
 	/**
-	 * this method transits state machine to a new state according to incoming event and transitions
+	 * this method transit state machine to a new state according to incoming event and transitions
 	 * table
 	 * @param event to proceed
 	 * @return new current event
@@ -73,7 +73,7 @@ public class State<EventType extends Enum<EventType>> {
 		if (curTransition == null) { //check for (*) transition
 			curTransition = transitions.get(null);
 			if (curTransition == null) {
-				invalidTransitionCallback(event);
+				onInvalidTransition(event);
 				throw new InvalidEventType();
 			}
 		}
@@ -107,7 +107,7 @@ public class State<EventType extends Enum<EventType>> {
 	 * @param theEvent event upon which state becomes current
 	 * @param prevState previous current state
 	 */
-	public void stateBecomesCurrentCallback(StateMachineEvent<EventType> theEvent, State<EventType> prevState){
+	public void onStateBecomesCurrent(StateMachineEvent<EventType> theEvent, State<EventType> prevState){
 	}
 	
 	/**
@@ -118,20 +118,20 @@ public class State<EventType extends Enum<EventType>> {
 	 * @param theEvent event upon which state becomes current
 	 * @param nextState previous current state
 	 */
-	public void otherStateBecomesCurrentCallback(StateMachineEvent<EventType> theEvent, State<EventType> nextState){
+	public void onStateIsNoLongerCurrent(StateMachineEvent<EventType> theEvent, State<EventType> nextState){
 		
 	}
 	
-	public void invalidTransitionCallback(StateMachineEvent<EventType> theEvent){
+	public void onInvalidTransition(StateMachineEvent<EventType> theEvent){
 		
 	}
 	/**
 	 * initialization callback, which completes initialization of  the state. Note that this method can be called
-	 * from within conataining state machine's constructor
+	 * from within containing state machine's constructor
 	 * @param initializer map of initialization parameters
 	 * @throws BadStateMachineSpecification
 	 */
-	public void stateMachineInitializedCallback(Map<Object,Object>  initializer) throws BadStateMachineSpecification
+	public void onStateMachineInitialized(Map<Object,Object>  initializer) throws BadStateMachineSpecification
 	{
 	}
 	
