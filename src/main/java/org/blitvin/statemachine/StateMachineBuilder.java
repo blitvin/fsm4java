@@ -1,5 +1,5 @@
 /*
- * (C) Copyright Boris Litvin 2014, 2015
+ * (C) Copyright Boris Litvin 2014 - 2016
  * This file is part of FSM4Java library.
  *
  *  FSM4Java is free software: you can redistribute it and/or modify
@@ -19,198 +19,401 @@ package org.blitvin.statemachine;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.EnumMap;
 import java.util.HashMap;
 
 /**
- * StateMachineBuilder is a helper class for programmatic building of FSM.
+ * This is a main way to obtain FSM object. 
+ * Factories internally use this class to  construct FSM
  * @author blitvin
- *
- * @param <EventType> alphabet of FSM to be built
+ * @param <EventType>
  */
 public class StateMachineBuilder<EventType extends Enum<EventType>> {
-	private State<EventType> lastState;
-	private State<EventType> initialState;
-	private Transition<EventType> lastTransition;
-	private final HashMap<String,State<EventType>> states;
-	@SuppressWarnings("unused")
-	private final String machineName;
-	private final Class <? extends StateMachine<EventType>> implClass;
-	private final HashMap<Object, HashMap<Object,Object>> initializers = new HashMap<Object, HashMap<Object,Object>>();
-	private HashMap<Object,Object> lastInitializer = null;
-	private Object lastInitializerAssociatedWith = null;
-	
-	private void setLastState(State<EventType> s){
-			lastState = s;
-			lastTransition = null;
-	}
-	/**
-	 * This constructor allows to supply class of state machine to be built
-	 * @param name string identifying state machine. Currently is not used, and provided for completeness ( factories provided by the package use
-	 * state machine names for referencing) 
-	 * @param implClass class of FSM object to be built
-	 */
-	public StateMachineBuilder(String name,Class <? extends StateMachine<EventType>> implClass){
-		setLastState(null);
-		machineName  = name;
-		states  = new HashMap<String, State<EventType>>();
-		initialState = null;
-		this.implClass = implClass;
-	}
-	
-	
-	@SuppressWarnings({ "unchecked", "rawtypes" })
-	/**
-	 * This constructor assumes SimpleStateMachine class
-	 * @param name name string identifying state machine. Currently is not used, and provided for  ( factories provided by the package use
-	 * state machine names for referencing) 
-	 */
-	public StateMachineBuilder(String name){
-		this(name,(Class)SimpleStateMachine.class);
-		/* this(name,(Class<? extends StateMachine<EventType>>) SimpleStateMachine.class);
-		 * for some reason the above line doesn't compile in JDK1.8, even though it is OK in 1.6 and 1.7..
-		 */
-	}
-	
-	public StateMachineBuilder<EventType> addState(State<EventType> newState){
-		states.put(newState.getStateName(),newState);
-		setLastState(newState);
-		if (initialState == null) //first state considered to be initial
-			initialState = newState;
-		return this;
-	}
-	/**
-	 * marks current state as initial one. There is only one initial state in FSM, if the method called multiple times, last choice 
-	 * is saved
-	 * @return this object
-	 */
-	public StateMachineBuilder<EventType> markStateAsInitial() {
-		initialState = lastState;
-		return this;
-	}
-	
-	/**
-	 * Adds new transition to current state 
-	 * @param event event on which the transition is triggered
-	 * @param transition transition object @see Transition
-	 * @return this 
-	 */
-	public StateMachineBuilder<EventType> addTransition(EventType event,Transition<EventType> transition) {
-		lastState.setTransition(event, transition);
-		lastTransition = transition;
-		return this;
-	}
-	
-	/**
-	 * adds transition to given state
-	 * @param state the state to add transition to
-	 * @param event trigger event for the transition
-	 * @param transition transition object
-	 * @return this
-	 */
-	public StateMachineBuilder<EventType> addTransition(State<EventType> state,EventType event,Transition<EventType> transition) {
-		if (states.get(state.getStateName()) != state)
-			states.put(state.getStateName(), state);
-		state.setTransition(event, transition);
-		lastState = state;
-		lastTransition = transition;
-		return this;
-	}
-	
-	/**
-	 * sets current state to one with given name.
-	 * @param name of state to set as current
-	 * @return
-	 */
-	public StateMachineBuilder<EventType> revisitState(String name){
-		setLastState(states.get(name));
-		return this;
-	}
-	
-	/**
-	 * set current transition
-	 * @param event trigger event for transition to become current 
-	 * @return this
-	 */
-	public StateMachineBuilder<EventType> revisitTransition(EventType e){
-		lastTransition = lastState.getTransitionByEvent(e);
-		lastInitializer = initializers.get(lastTransition);
-		return this;
-	}
-	
-	/**
-	 * adds default transition i.e. one that used if no transition explicitly defined for event received by FSM 
-	 * @param defaultTransition transition object
-	 * @return this
-	 */
-	public StateMachineBuilder<EventType> addDefaultTransition(Transition<EventType> defaultTransition){
-		lastState.setTransition(null, defaultTransition);
-		lastTransition = defaultTransition;
-		return this;
-	}
-	
-	/**
-	 * Adds initialization attribute for state or transition, e.g. for SimpleTransition attribute named "toState" containing 
-	 * name of destination state must be supplied 
-	 * @param attributeName name of the attribute
-	 * @param attributeValue value of the attribute
-	 * @return this
-	 */
-	public StateMachineBuilder<EventType> addAttribute(String attributeName, String attributeValue){
-		Object initializerAssociatedWith = (lastTransition == null)? lastState : lastTransition;
-		if (lastInitializerAssociatedWith != initializerAssociatedWith) {
-			lastInitializer = initializers.get(initializerAssociatedWith);
-			lastInitializerAssociatedWith = initializerAssociatedWith;
-		}
-		if (lastInitializer == null) {
-			lastInitializer = new HashMap<Object, Object>();
-			initializers.put(initializerAssociatedWith, lastInitializer);
-		}
-		lastInitializer.put(attributeName, attributeValue);
-		return this;
-	}
-	
-	/**
-	 * constructs fully initialized StateMachine object using information supplied by invocation of methods addTransitoin, addState etc. 
-	 * @return fully initialized state machine
-	 * @throws BadStateMachineSpecification if state machine can't be constructed e.g. transition of type SimpleTransition was not
-	 * supplied with "toState" attribute
-	 */
-	public StateMachine<EventType> build() throws BadStateMachineSpecification{
-		@SuppressWarnings("rawtypes")
-		final Class[] constTypes = {HashMap.class, State.class};
-		try {
-			Object[] args = {states,initialState};
-			Constructor<? extends StateMachine<EventType>> constructor = implClass.getConstructor(constTypes);
-			StateMachine<EventType> retVal = (StateMachine<EventType>) constructor.newInstance(args);
-			retVal.completeInitialization(initializers);
-			return retVal;
-		} catch (NoSuchMethodException|SecurityException|InstantiationException|IllegalAccessException|
-				IllegalArgumentException|InvocationTargetException e) {
-			throw new BadStateMachineSpecification("StateMachineBuilder.build got exception during construction of state machine "+e.toString(),e); 
-		}
-	}
-	
-	/**
-	 * constructs fully initialized StateMachine object using information supplied by invocation of methods addTransitoin, 
-	 * addState etc. Note this method assumes existence of the object has constructor with arguments 
-	 * (HashMap<String,State>,State,Object)
-	 * @param additional parameters passed to the state machine object constructor
-	 * @return fully initialized state machine
-	 * @throws BadStateMachineSpecification if state machine can't be constructed e.g. transition of type SimpleTransition was not
-	 * supplied with "toState" attribute
-	 */
-	public StateMachine<EventType> build(Object constructorArgs) throws BadStateMachineSpecification{
-		@SuppressWarnings("rawtypes")
-		final Class[] constTypes = {HashMap.class, State.class, Object.class};
-		try {
-			Object[] args = {states,initialState, constructorArgs};
-			Constructor<? extends StateMachine<EventType>> constructor = implClass.getConstructor(constTypes);
-			StateMachine<EventType> retVal = (StateMachine<EventType>) constructor.newInstance(args);
-			retVal.completeInitialization(initializers);
-			return retVal;
-		} catch (NoSuchMethodException|SecurityException|InstantiationException|IllegalAccessException|
-				IllegalArgumentException|InvocationTargetException e) {
-			throw new BadStateMachineSpecification("StateMachineBuilder.build got exception during construction of state machine "+e.toString(),e); 
-		}
-	}
+
+    public static final int STATE_PROPERTIES_BASIC = 1;
+    public static final int STATE_PROPERTIES_CUSTOMIZED = 2;
+    public static final int STATE_PROPERTIES_ASPECT = 0x100;
+    final static int NODE_TYPE_MASK = 0xFF;
+
+    /* WARNING ! MODIFICATION OF BELOW ENUMS REQUIRES CORRESPONDING CHANGES IN 
+     * state_machines.xsd ,DOMStateMachineFactory and AnnotatedStateMachine
+     */
+    public static enum FSM_TYPES {
+
+        BASIC, SIMPLE, MULTI_INTERNAL_EVENTS, ASPECT
+    };
+
+    public static enum TRANSITION_TYPE {
+
+        BASIC, NULL, CUSTOMIZED
+    }
+
+    static class CopyStatesFactory<EventType extends Enum<EventType>> implements FSMStateFactory<EventType> {
+
+        private StateMachine<EventType> sourceFSM;
+
+        public CopyStatesFactory(StateMachine<EventType> fsm) {
+            sourceFSM = fsm;
+        }
+
+        @Override
+        public State<EventType> get(String state, HashMap<Object, Object> initializers) {
+            return sourceFSM.getStateByName(state);
+        }
+
+    }
+
+    /**
+     * property used for creation of state (state business logic object - one
+     * defining call backs etc.) from class name. It assumes existence of
+     * argument-less constructor see default flow state object creation
+     */
+    public static final String STATE_CLASS_PROPERTY = "class";
+    /**
+     * property used for obtaining state (state business logic object - one
+     * defining call backs etc.) from FSM global properties. Property searched
+     * is [statename]BusinessObject. see default flow state object creation
+     */
+    public static final String STATE_IN_GLOBAL_PROPERTIES_SUFFIX = "BusinessObject";
+    /**
+     * property used for obtaining state (state business logic object) from
+     * factory passed as property of the state in FSM (by addProperty)
+     */
+    public static final String STATE_FACTORY_PROPERTY = "stateFactory";
+
+    /**
+     * property used for obtaining state(state business logic object) from
+     * factory set in FSM global properties
+     */
+    public static final String TARGET_STATE = "toState";
+
+    private static enum CURRENTLY_CONSTRUCTED_TRANSITION {
+
+        NONE, EVENT, DEFAULT;
+    }
+
+    //private FSMNodeFactory<EventType> fsmNodeFactory;
+    //private FSMStateFactory<EventType> fsmStateFactory;
+    private int defaultProperties;
+    // private EnumMap<EventType,Transition<EventType>> curTransitions;
+    //private Transition<EventType> curDefaultTransition;
+    private Transition<EventType> curTransition;
+    private HashMap<Object, Object> curAttributes;
+    private HashMap<Object, HashMap<Object, Object>> attributes;
+    // private Object attributeObject;
+    private HashMap<String, FSMNode<EventType>> nodes;
+    private String curStateName = null;
+    private FSMNode<EventType> curNode;
+    private Class eventTypeClass;
+    private FSMNode<EventType> initialNode;
+    private CURRENTLY_CONSTRUCTED_TRANSITION curConstructedTransition = CURRENTLY_CONSTRUCTED_TRANSITION.NONE;
+    private FSM_TYPES retValType;
+
+    private void setAttributes() {
+        if (curConstructedTransition == CURRENTLY_CONSTRUCTED_TRANSITION.NONE) {
+            attributes.put(curNode, curAttributes);
+        } else {
+            attributes.put(curTransition, curAttributes);
+        }
+        curAttributes = new HashMap<>();
+    }
+
+    public static final String STATE_FACTORY_IN_GLOBAL_PROPERTIES = "globalFactory";
+
+    public static final String ASPECTS_PROPERTY="aspects";
+    
+    public StateMachineBuilder(FSM_TYPES type, Class eventTypeClass) throws BadStateMachineSpecification {
+        if (!eventTypeClass.isEnum()) {
+            throw new BadStateMachineSpecification("provided class is not an enum");
+        }
+        this.eventTypeClass = eventTypeClass;
+        nodes = new HashMap<>();
+        curAttributes = new HashMap<>();
+        attributes = new HashMap<>();
+        if (type == FSM_TYPES.ASPECT) {
+            defaultProperties = STATE_PROPERTIES_BASIC | STATE_PROPERTIES_ASPECT;
+        } else {
+            defaultProperties = STATE_PROPERTIES_BASIC;
+        }
+        retValType = type;
+    }
+
+    public StateMachineBuilder<EventType> overrideDefaultStateProperties(int stateProperties) {
+        defaultProperties = stateProperties;
+        return this;
+    }
+
+    public StateMachineBuilder<EventType> markStateAsInitial() throws BadStateMachineSpecification {
+        if (curNode == null) {
+            throw new BadStateMachineSpecification("add node before marking it as initial");
+        }
+        initialNode = curNode;
+        return this;
+    }
+
+    public StateMachineBuilder<EventType> markStateAsFinal() throws BadStateMachineSpecification {
+        if (curNode == null) {
+            throw new BadStateMachineSpecification("add node before marking it as final");
+        }
+        curNode.doesHoldFinalState();
+        return this;
+    }
+
+    public StateMachineBuilder<EventType> addState(String name)
+            throws BadStateMachineSpecification {
+        addState(name, defaultProperties);
+        return this;
+    }
+
+    public StateMachineBuilder<EventType> addState(String name, State<EventType> state)
+            throws BadStateMachineSpecification {
+        addState(name, defaultProperties);
+        curNode.setState(state);
+        return this;
+    }
+
+    public StateMachineBuilder<EventType> addState(String name, State<EventType> state, int properties)
+            throws BadStateMachineSpecification {
+        addState(name, properties);
+        curNode.setState(state);
+        return this;
+    }
+
+    public StateMachineBuilder<EventType> addState(String name, int properties)
+            throws BadStateMachineSpecification {
+        if (curNode == null) {
+            attributes.put(null, curAttributes);// attributes of FSM itself
+            curAttributes = new HashMap<>();
+        } else {
+            setAttributes();
+        }
+        curConstructedTransition = CURRENTLY_CONSTRUCTED_TRANSITION.NONE;
+        curTransition = null;
+        switch (properties & NODE_TYPE_MASK) {
+            case STATE_PROPERTIES_BASIC:
+                curNode = new BasicNode<>(name, new EnumMap<>(eventTypeClass));
+                break;
+            case STATE_PROPERTIES_CUSTOMIZED:
+                throw new BadStateMachineSpecification("customized logic state is not implemented yet");
+            default:
+                throw new BadStateMachineSpecification("bad state property :" + properties);
+        }
+        if ((properties & STATE_PROPERTIES_ASPECT) != 0) {
+            curNode = new AspectNode<>(curNode);
+        }
+        nodes.put(name, curNode);
+        return this;
+    }
+
+    public StateMachineBuilder<EventType> specifyStateObject(State<EventType> state){
+        curNode.setState(state);
+        return this;
+    }
+    
+    public StateMachineBuilder<EventType> revisitState(String name) throws BadStateMachineSpecification {
+       if (curNode == null) {
+            attributes.put(null, curAttributes);// attributes of FSM itself
+            curAttributes = new HashMap<>();
+        } else {
+            setAttributes();
+        }
+        curConstructedTransition = CURRENTLY_CONSTRUCTED_TRANSITION.NONE;
+        curTransition = null;
+        curNode = nodes.get(name);
+        if (curNode == null) {
+            throw new BadStateMachineSpecification("revisit unable to find state "+name);
+        }
+        curAttributes = attributes.get(curNode);
+        return this;
+    }
+    
+    public StateMachineBuilder<EventType> addTransition(EventType event) throws BadStateMachineSpecification {
+        return addTransition(event, TRANSITION_TYPE.BASIC);
+    }
+
+    public StateMachineBuilder<EventType> addTransition(EventType event, String transitionTarget) throws BadStateMachineSpecification {
+        return addTransition(event, TRANSITION_TYPE.BASIC).addProperty(TARGET_STATE, transitionTarget);
+    }
+
+    public StateMachineBuilder<EventType> addTransition(EventType event, TRANSITION_TYPE transition) throws BadStateMachineSpecification {
+        if (curNode == null) {
+            throw new BadStateMachineSpecification("add node before adding transitions to it");
+        }
+        setCurTransitionByType(transition);
+        curNode.setTransition(event, curTransition);
+        curConstructedTransition = CURRENTLY_CONSTRUCTED_TRANSITION.EVENT;
+        return this;
+    }
+
+    private void setCurTransitionByType(TRANSITION_TYPE transition) {
+        setAttributes();
+        switch (transition) {
+            case BASIC:
+                curTransition = new BasicTransition<>();
+                break;
+            case NULL:
+                curTransition = NullTransition.NULL_TRANSITION;
+                break;
+            case CUSTOMIZED:
+                curTransition = new CustomizedLogicTransition<>();
+                break;
+        }
+    }
+
+    public StateMachineBuilder<EventType> addDefaultTransition(TRANSITION_TYPE transition) throws BadStateMachineSpecification {
+        if (curNode == null) {
+            throw new BadStateMachineSpecification("add node before adding transitions to it");
+        }
+        setCurTransitionByType(transition);
+        curNode.setDefaultTransition(curTransition);
+        curConstructedTransition = CURRENTLY_CONSTRUCTED_TRANSITION.DEFAULT;
+        return this;
+    }
+
+    public StateMachineBuilder<EventType> addDefaultTransition() throws BadStateMachineSpecification {
+        return addDefaultTransition(TRANSITION_TYPE.BASIC);
+    }
+
+    public StateMachineBuilder<EventType> addDefaultTransition(String transitionTarget) throws BadStateMachineSpecification {
+        return addDefaultTransition(TRANSITION_TYPE.BASIC).addProperty(TARGET_STATE, transitionTarget);
+    }
+    /*
+     public StateMachineBuilder<EventType> statesFrom(StateMachine<EventType> machine,
+     boolean overrideStates){
+     fsmStateFactory = new CopyStatesFactory(machine,fsmStateFactory,overrideStates);
+     return this;
+     }
+    
+     public StateMachineBuilder<EventType> statesFrom(FSMStateFactory<EventType> factory){
+     fsmStateFactory = factory;
+     return this;
+     }*/
+
+    public StateMachineBuilder<EventType> addProperty(Object name, Object value) {
+        curAttributes.put(name, value);
+        return this;
+    }
+
+    private void trySetStateFromFactory(FSMStateFactory<EventType> factory,
+            FSMNode<EventType> node,
+            String name,
+            HashMap<Object, Object> initializers) {
+        State<EventType> candidate = factory.get(name, initializers);
+        if (candidate != null) {
+            node.setState(candidate);
+        }
+    }
+
+    protected StateMachine<EventType> buildImpl(FSMStateFactory<EventType> factory, boolean overrideDefinedStates) throws BadStateMachineSpecification {
+
+        StateMachineDriver retVal = null;
+        if (initialNode == null) {
+            throw new BadStateMachineSpecification("Initial state is not defined");
+        }
+
+        // TBD refactor this
+        switch (retValType) {
+            case BASIC:
+                retVal = new BasicStateMachine(nodes, initialNode);
+                break;
+            case SIMPLE:
+                retVal = new SimpleStateMachine(nodes, initialNode);
+                break;
+            case MULTI_INTERNAL_EVENTS:
+                retVal = new MultiInternalEventsStateMachine(nodes, initialNode);
+                break;
+            case ASPECT:
+                retVal = new AspectEnabledStateMachine(nodes, initialNode);
+                break;
+            default:
+                throw new BadStateMachineSpecification("This fsm type is not yet implemented");
+
+        }
+        setAttributes();
+        HashMap<Object, Object> fsmAttributes = attributes.get(null);
+        boolean useGlobalFactory = false;
+        FSMStateFactory<EventType> globalFactory = null;
+        if (fsmAttributes.containsKey(STATE_FACTORY_IN_GLOBAL_PROPERTIES)) {
+            try {
+                globalFactory = (FSMStateFactory<EventType>) fsmAttributes.get(STATE_FACTORY_IN_GLOBAL_PROPERTIES);
+                useGlobalFactory = true;
+            } catch (ClassCastException e) {
+                // for now ignore attribute - no way to output warning
+            }
+        }
+        
+        //populate state objects
+        for (HashMap.Entry<String, FSMNode<EventType>> entry : nodes.entrySet()) {
+            FSMNode<EventType> theNode = entry.getValue();
+            HashMap<Object, Object> nodeAttributes = attributes.get(entry.getValue());
+
+            String stateName = entry.getKey();
+
+            if (factory != null
+                    && (theNode.getState() == null || overrideDefinedStates)) {
+                trySetStateFromFactory(factory, theNode, stateName, nodeAttributes);
+            }
+
+            // try retreive state from fsm attributes
+            if (theNode.getState() == null|| overrideDefinedStates) {
+                if (fsmAttributes.containsKey(stateName + STATE_IN_GLOBAL_PROPERTIES_SUFFIX)) {
+                    try {
+                        theNode.setState((State) fsmAttributes.get(stateName + STATE_FACTORY_IN_GLOBAL_PROPERTIES));
+                        continue;
+                    } catch (ClassCastException e) {
+                        throw new BadStateMachineSpecification("Attempt to get state from FSM properties failed: object doesn't implement State interface");
+                    }
+                }
+                if (useGlobalFactory) {
+                    trySetStateFromFactory(globalFactory, theNode, stateName, nodeAttributes);
+                }
+            }
+
+            // fallback to try to get state from class attribute
+            if (theNode.getState() == null) {
+                Class<? extends State> cl = null;
+                try {
+                    if ((cl = (Class<? extends State>) nodeAttributes.get(STATE_CLASS_PROPERTY)) == null) {
+                        throw new BadStateMachineSpecification("Can't figure out how to construct State " + stateName);
+                    }
+                } catch (ClassCastException e) {
+                    throw new BadStateMachineSpecification("bad class in attribute " + STATE_CLASS_PROPERTY + " for state " + stateName);
+                }
+                final Class[] noArgsCls = new Class[0];
+                try {
+                    Constructor<? extends State> ctr = cl.getConstructor(noArgsCls);
+                    theNode.setState(ctr.newInstance(new Object[0]));
+                } catch (NoSuchMethodException | SecurityException ex) {
+                    throw new BadStateMachineSpecification("Problem getting no-args constructor for state " + stateName + ":" + cl.getSimpleName() + ":" + ex.toString());
+                } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException ex) {
+                    throw new BadStateMachineSpecification("Problem creating instance of state for " + stateName + ":" + ex.toString());
+                }
+            }
+        }
+
+        retVal.completeInitialization(attributes);
+        return retVal;
+    }
+
+    public StateMachineBuilder<EventType> addFSMProperties(HashMap<Object, Object> fsmProperties) {
+        attributes.get(null).putAll(fsmProperties);
+        return this;
+    }
+    public StateMachineBuilder<EventType> addFSMProperty(Object name, Object value){
+        attributes.get(null).put(name, value);
+        return this;
+    }
+    public StateMachine<EventType> build(StateMachine<EventType> statesFrom, boolean overrideDefinedStates)
+            throws BadStateMachineSpecification {
+        return buildImpl(new CopyStatesFactory(statesFrom), overrideDefinedStates);
+    }
+
+    public StateMachine<EventType> build(FSMStateFactory<EventType> factory, boolean overrideDefinedStates)
+            throws BadStateMachineSpecification {
+        return buildImpl(factory, overrideDefinedStates);
+    }
+
+    public StateMachine<EventType> build() throws BadStateMachineSpecification {
+        return buildImpl(null, true);
+    }
 }

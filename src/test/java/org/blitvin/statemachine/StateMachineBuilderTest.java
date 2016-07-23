@@ -1,8 +1,10 @@
 package org.blitvin.statemachine;
 
+import java.util.HashMap;
 import static org.junit.Assert.*;
 
 import org.blitvin.statemachine.buildertest.BuilderTestState;
+import org.blitvin.statemachine.buildertest.BuilderTestStateFactory;
 import org.junit.Test;
 
 
@@ -30,58 +32,62 @@ public class StateMachineBuilderTest {
 	}
 	
 	@Test
-	public void testBuilder() throws BadStateMachineSpecification,InvalidEventType{
-		StateMachineBuilder<STM_EVENTS> builder = new StateMachineBuilder<>("myMachine");
+	public void testBuilder() throws BadStateMachineSpecification,InvalidEventException{
+		StateMachineBuilder<STM_EVENTS> builder = new StateMachineBuilder<>(StateMachineBuilder.FSM_TYPES.SIMPLE,STM_EVENTS.class);
 		
-		builder.addState(new State<STM_EVENTS>("state1", false)).markStateAsInitial().
-			addTransition(STM_EVENTS.STM_A, new SimpleTransition<STM_EVENTS>()).addAttribute("toState", "state2");
-		builder.addTransition(STM_EVENTS.STM_B, new SimpleTransition<STM_EVENTS>()).addAttribute("toState", "state3");
+		builder.addState("state1").markStateAsInitial().
+                        addProperty("class", org.blitvin.statemachine.buildertest.BuilderTestState.class).
+			addTransition(STM_EVENTS.STM_A).addProperty("toState", "state2");
+		builder.addTransition(STM_EVENTS.STM_B).addProperty("toState", "state3");
 		
-		builder.addState(new State<STM_EVENTS>("state2",false))
-			.addTransition(STM_EVENTS.STM_A,new SimpleTransition<STM_EVENTS>()).addAttribute("toState", "state3")
-			.addDefaultTransition(new SimpleTransition<STM_EVENTS>()).addAttribute("toState", "state2");
+		builder.addState("state2")
+			.addTransition(STM_EVENTS.STM_A).addProperty("toState", "state3")
+			.addDefaultTransition().addProperty("toState", "state2");
 		
-		BuilderTestState<STM_EVENTS> state3 = new BuilderTestState<>("state3", true);
-		SimpleTransition<STM_EVENTS> transition = new SimpleTransition<>();
+		BuilderTestState<STM_EVENTS> state3 = new BuilderTestState<>();
 		
-		builder.addState(state3).addAttribute("myAttribute", "isSet")
-			.addTransition(STM_EVENTS.STM_A,transition).addAttribute("toState", "state1")
-			.addTransition(STM_EVENTS.STM_B, transition)
-			.addTransition(STM_EVENTS.STM_C, new SimpleTransition<STM_EVENTS>()).addAttribute("toState", "state2");
+		builder.addState("state3",state3).addProperty("myAttribute", "isSet")
+			.addTransition(STM_EVENTS.STM_A).addProperty("toState", "state1")
+			.addTransition(STM_EVENTS.STM_B,StateMachineBuilder.TRANSITION_TYPE.NULL)
+			.addTransition(STM_EVENTS.STM_C).addProperty("toState", "state2").markStateAsFinal();
 		
-		StateMachine<STM_EVENTS> machine = builder.build();
+                HashMap<Object,Object> fsmInit = new HashMap<>();
+                fsmInit.put(StateMachineBuilder.STATE_FACTORY_IN_GLOBAL_PROPERTIES, new BuilderTestStateFactory<>());
+		StateMachine<STM_EVENTS> machine = builder.addFSMProperties(fsmInit).build();
 		
-		assertEquals(machine.getCurrentState().getStateName(),"state1");
-		assertFalse(machine.getCurrentState().isFinalState());
+		assertEquals(machine.getNameOfCurrentState(),"state1");
+		assertFalse(machine.isInFinalState());
 		TestEvent event = new TestEvent();
 		machine.transit(event.setEvent(STM_EVENTS.STM_A));
-		assertEquals(machine.getCurrentState().getStateName(),"state2");
-		assertFalse(machine.getCurrentState().isFinalState());
+		assertEquals(machine.getNameOfCurrentState(),"state2");
+		assertFalse(machine.isInFinalState());
 		machine.transit(event);
-		assertEquals(machine.getCurrentState().getStateName(),"state3");
+		assertEquals(machine.getNameOfCurrentState(),"state3");
 		assertEquals(((BuilderTestState<STM_EVENTS>)machine.getCurrentState()).getMyAttribute(),"isSet");
-		assertTrue(machine.getCurrentState().isFinalState());
-		machine.transit(event);
-		assertEquals(machine.getCurrentState().getStateName(),"state1");
+		assertTrue(machine.isInFinalState());
+                machine.transit(event.setEvent(STM_EVENTS.STM_B));
+                assertEquals(machine.getNameOfCurrentState(),"state3");
+		machine.transit(event.setEvent(STM_EVENTS.STM_A));
+		assertEquals(machine.getNameOfCurrentState(),"state1");
 		try {
 			machine.transit(event.setEvent(STM_EVENTS.STM_C));
 			fail("Should throw InvalidEventType as STM_C transition is not defined");
 		}
-		catch(InvalidEventType e){
+		catch(InvalidEventException e){
 			// no transition defined on STM_C event
 		}
 		machine.transit(event.setEvent(STM_EVENTS.STM_B));
-		assertEquals(machine.getCurrentState().getStateName(),"state3");
+		assertEquals(machine.getNameOfCurrentState(),"state3");
 		machine.transit(event.setEvent(STM_EVENTS.STM_C));
-		assertEquals(machine.getCurrentState().getStateName(),"state2");
+		assertEquals(machine.getNameOfCurrentState(),"state2");
 		// test default transition
 		machine.transit(event);
-		assertEquals(machine.getCurrentState().getStateName(),"state2");
+		assertEquals(machine.getNameOfCurrentState(),"state2");
 		machine.transit(event.setEvent(STM_EVENTS.STM_B));
-		assertEquals(machine.getCurrentState().getStateName(),"state2");
+		assertEquals(machine.getNameOfCurrentState(),"state2");
 		machine.transit(event.setEvent(STM_EVENTS.STM_A));
-		assertEquals(machine.getCurrentState().getStateName(),"state3");
-		assertTrue(machine.getCurrentState().isFinalState());
+		assertEquals(machine.getNameOfCurrentState(),"state3");
+		assertTrue(machine.isInFinalState());
 		
 		
 		

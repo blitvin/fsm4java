@@ -41,8 +41,8 @@ public class StampedState<EventType extends Enum<EventType>> {
 		return stamp;
 	}
 	
-	@Override
+	/*@Override
 	public String toString(){
 		return "["+state.getStateName()+":"+stamp+"]";
-	}
+	}*/
 }

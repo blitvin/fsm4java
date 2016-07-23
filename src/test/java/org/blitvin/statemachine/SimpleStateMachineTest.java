@@ -18,6 +18,7 @@
 package org.blitvin.statemachine;
 
 import java.util.HashMap;
+import org.blitvin.statemachine.buildertest.BuilderTestState;
 
 
 enum STM_EVENTS {
@@ -42,12 +43,14 @@ class SimpleEvent implements StateMachineEvent<STM_EVENTS>{
 	
 }
 public class SimpleStateMachineTest {
-
+/*
 	public static SimpleStateMachine<STM_EVENTS> createMachine() throws BadStateMachineSpecification {
-		HashMap<String, State<STM_EVENTS>> states = new HashMap<>();
-		State<STM_EVENTS> state1 = new State<>("INITIAL", false);
-		State<STM_EVENTS> state2 = new State<>("GOT_B", false);
-		State<STM_EVENTS> state3 = new State<>("GOT_A",  true);
+            StateMachineBuilder<STM_EVENTS> builder = new StateMachineBuilder<>(StateMachineBuilder.FSM_TYPES.SIMPLE,STM_EVENTS.class);
+		BuilderTestState<STM_EVENTS> state1 = new BuilderTestState<>(/*"INITIAL", false* /);
+		BuilderTestState<STM_EVENTS> state2 = new BuilderTestState<>(/*"GOT_B", false* /);
+		BuilderTestState<STM_EVENTS> state3 = new BuilderTestState<>(/*"GOT_A",  true* /);
+                builder.addState("INITIAL", state1).addTransition(STM_EVENTS.STM_B,"GOT_A").
+                        addDefaultTransition()
 		HashMap<STM_EVENTS,Transition<STM_EVENTS>> transitions = new HashMap<STM_EVENTS, Transition<STM_EVENTS>>();
 		transitions.put(STM_EVENTS.STM_B, new SimpleTransition<STM_EVENTS>(state2,null));
 		transitions.put(null,new SimpleTransition<STM_EVENTS>(state1,null));
@@ -79,32 +82,32 @@ public class SimpleStateMachineTest {
 		System.out.println("At the beginning :" +mach.isInFinalState());
 		try {
 			mach.transit(ev);
-			System.out.println("After A :" +mach.isInFinalState() + "("+mach.getCurrentState().getStateName()+")");
+			System.out.println("After A :" +mach.isInFinalState() + "("+mach.getNameOfCurrentState()+")");
 			mach.transit(ev);
-			System.out.println("After A :" +mach.isInFinalState()+ "("+mach.getCurrentState().getStateName()+")");
+			System.out.println("After A :" +mach.isInFinalState()+ "("+mach.getNameOfCurrentState()+")");
 			ev.setEventType(STM_EVENTS.STM_B);
 			mach.transit(ev);
-			System.out.println("After B :" +mach.isInFinalState()+ "("+mach.getCurrentState().getStateName()+")");
+			System.out.println("After B :" +mach.isInFinalState()+ "("+mach.getNameOfCurrentState()+")");
 			ev.setEventType(STM_EVENTS.STM_A);
 			mach.transit(ev);
-			System.out.println("After A :" +mach.isInFinalState()+ "("+mach.getCurrentState().getStateName()+")");
+			System.out.println("After A :" +mach.isInFinalState()+ "("+mach.getNameOfCurrentState()+")");
 			ev.setEventType(STM_EVENTS.STM_C);
 			mach.transit(ev);
-			System.out.println("After C :" +mach.isInFinalState()+ "("+mach.getCurrentState().getStateName()+")");
+			System.out.println("After C :" +mach.isInFinalState()+ "("+mach.getNameOfCurrentState()+")");
 			ev.setEventType(STM_EVENTS.STM_B);
 			mach.transit(ev);
-			System.out.println("After B :" +mach.isInFinalState()+ "("+mach.getCurrentState().getStateName()+")");
+			System.out.println("After B :" +mach.isInFinalState()+ "("+mach.getNameOfCurrentState()+")");
 			ev.setEventType(STM_EVENTS.STM_B);
 			mach.transit(ev);
-			System.out.println("After B :" +mach.isInFinalState()+ "("+mach.getCurrentState().getStateName()+")");
+			System.out.println("After B :" +mach.isInFinalState()+ "("+mach.getNameOfCurrentState()+")");
 			ev.setEventType(STM_EVENTS.STM_A);
 			mach.transit(ev);
-			System.out.println("After A :" +mach.isInFinalState()+ "("+mach.getCurrentState().getStateName()+")");
+			System.out.println("After A :" +mach.isInFinalState()+ "("+mach.getNameOfCurrentState()+")");
 		} catch (InvalidEventType e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
 		
-	}
+	}*/
 }

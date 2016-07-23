@@ -1,4 +1,4 @@
-package org.blitvin.StateMachine.domfactorytest;
+package org.blitvin.statemachine.domfactorytest;
 
 import org.blitvin.statemachine.StateMachineEvent;
 

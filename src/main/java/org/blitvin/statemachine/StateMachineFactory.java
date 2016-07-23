@@ -18,6 +18,8 @@
 
 package org.blitvin.statemachine;
 
+import java.util.HashMap;
+
 
 /**
  * StateMachineFactory specifies interface of factory for creating state machines
@@ -40,7 +42,7 @@ public abstract class StateMachineFactory {
 	
 		/**
 		 * return (and if necessary, initialize) default factory
-		 * @return default state macine factory
+		 * @return default state machine factory
 		 */
 		static StateMachineFactory getDefaultFactory(){
 			if (!initialized) {
@@ -81,8 +83,10 @@ public abstract class StateMachineFactory {
 		return DefaultFactoryInstance.getDefaultFactory();
 	}
 	
-	@SuppressWarnings("rawtypes")
-	public abstract StateMachine getStateMachine(String name) throws BadStateMachineSpecification; 
 	
+	public abstract StateMachine<? extends Enum<?>> getStateMachine(String name) throws BadStateMachineSpecification; 
+        public abstract StateMachine<? extends Enum<?>> getStateMachine(String name, HashMap<Object,Object> fsmProperties) 
+                throws  BadStateMachineSpecification;
 	
+        public abstract StateMachineBuilder<? extends Enum<?>> getBuilder(String name) throws BadStateMachineSpecification;
 }

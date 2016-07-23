@@ -23,7 +23,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.FIELD,ElementType.LOCAL_VARIABLE, ElementType.TYPE})
+@Target( ElementType.ANNOTATION_TYPE)
 public @interface States {
 	String name() default "";
 	StateSpec[] value();

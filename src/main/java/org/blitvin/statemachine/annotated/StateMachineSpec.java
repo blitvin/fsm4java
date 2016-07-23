@@ -21,12 +21,13 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import org.blitvin.statemachine.StateMachineBuilder;
 
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.TYPE)
+@Target({ElementType.FIELD,ElementType.LOCAL_VARIABLE,ElementType.TYPE})
 public @interface StateMachineSpec {
 	String name();
-	Class <? extends org.blitvin.statemachine.StateMachine> impClass() default org.blitvin.statemachine.SimpleStateMachine.class;
+        StateMachineBuilder.FSM_TYPES type();
 	Class <? extends Enum<?>> eventTypeClass();
 	StateSpec[] states();
 }

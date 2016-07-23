@@ -1,4 +1,6 @@
 #FSM4Java
+THIS DOCUMENT IS OUT OF DATE AND DESCRIBES 1.5 version of FSM4JAVA
+IT WILL BE UPDATED TO v2.0 ASAP. Sorry for inconvenience. 
 FSM4Java is a library that allows creation and usage of deterministic finite state machine ( aka finite state automata aka state machine aka FSM).
 More details on what FSM is can be found e.g. on [http://en.wikipedia.org/wiki/Finite-state_machine](wikipedia).
 

@@ -21,12 +21,14 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import org.blitvin.statemachine.StateMachineBuilder;
+import static org.blitvin.statemachine.StateMachineBuilder.TRANSITION_TYPE.BASIC;
 
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.TYPE)
+@Target( ElementType.ANNOTATION_TYPE)
 public @interface TransitionSpec {
 	String event() default "";
 	boolean isDefaultTransition() default false;
-	Class<? extends org.blitvin.statemachine.Transition> implClass() default org.blitvin.statemachine.SimpleTransition.class;
+        StateMachineBuilder.TRANSITION_TYPE type() default BASIC;
 	Param[] params() default {};
 }

@@ -1,5 +1,5 @@
 /*
- * (C) Copyright Boris Litvin 2014, 2015
+ * (C) Copyright Boris Litvin 2014 - 2016
  * This file is part of FSM4Java library.
  *
  *  FSM4Java is free software: you can redistribute it and/or modify
@@ -20,71 +20,20 @@ package org.blitvin.statemachine;
 import java.util.Map;
 
 /**
- * This class represents transition of state machine. When state machine receives an event
- * current state chooses transition according to its event type, the transition changes current
- * state according to internal logic. transit method should return new current state. Business 
- * logic payload should be implemented in this method. 
+ * Internal interface defining transition objects methods
  * @author blitvin
- *
- * @param <EventType>
  */
-public abstract class Transition<EventType extends Enum<EventType>> {
-	protected StateMachine<EventType> containingMachine;
-	
-	/**
-	 * 
-	 * @return state machine of the transition
-	 */
-	public StateMachine<EventType> getContainingMachine() {
-		return containingMachine;
-	}
-
-	/**
-	 * defines machine the transition is part of 
-	 * @param containingMachine
-	 */
-	public void setContainingMachine(StateMachine<EventType> containingMachine) {
-		if (this.containingMachine == null)
-			this.containingMachine = containingMachine;
-	}
-
-	/**
-	 * constructor with containing state machine supplied
-	 * @param machine state machine the transition belongs to 
-	 */
-	public  Transition( StateMachine<EventType> machine){
-		containingMachine = machine;
-	}
-	
-	public Transition(){
-		
-	}
-	
-	/**
+interface Transition<EventType extends Enum<EventType>> {
+    /**
 	 * transit method returns new current state. Also business logic should be implemented in
 	 * subclasses of Transition
 	 * @param event
 	 * @return new current state of the state machine
 	 */
-	abstract State<EventType> transit(StateMachineEvent<EventType> event);
-	
-	
-	/**
-	 * This callback is called after constructor of state machine initialized all states that is
-	 * states are registered with the state machine, and constructor has called setContainingMachine on them
-	 * This function used for completing initialization that depend on state of other states initialization
-	 *  note that this callback can be called from within 
-	 */
-	abstract public void stateMachineInitializedCallback(StateMachine<EventType> containingMachine) throws BadStateMachineSpecification;
-	/**
-	 * This callback is called after constructor of state machine initialized all states that is
-	 * states are registered with the state machine, and constructor has called setContainingMachine on them
-	 * This function used for completing initialization that depend on state of other states initialization
-	 *  note that this callback can be called from within StateMachine constructor so containingMachine parameter
-	 *  contains not fully formed reference! That is you can store it , but you should not call virtual functions etc. 
-	 * @param initializer map of key-value strings containing parameters for transition initialization 
-	 * @param containingMachine - machine the transition belongs to
-	 * @throws BadStateMachineSpecification - throw it if something gone wrong during initializaiton
-	 */
-	abstract public void stateMachineInitializedCallback(Map<Object,Object> initializer, StateMachine<EventType> containingMachine) throws BadStateMachineSpecification;
+	FSMNode<EventType> getTarget(StateMachineEvent<EventType> event);
+        
+        void onStateMachineInitialized(Map<?,?>  initializer,
+			         StateMachineDriver<EventType> containingMachine,
+                                 State<EventType> fromState)
+			throws BadStateMachineSpecification;
 }

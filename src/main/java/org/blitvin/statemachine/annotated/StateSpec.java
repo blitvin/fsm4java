@@ -17,11 +17,20 @@
  */
 package org.blitvin.statemachine.annotated;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+@Retention(RetentionPolicy.RUNTIME)
+@Target( ElementType.ANNOTATION_TYPE)
 public @interface StateSpec {
 	String name();
 	Class<? extends org.blitvin.statemachine.State> implClass() default org.blitvin.statemachine.State.class;
 	boolean isFinal() default false;
 	boolean isInitial() default false;
+        boolean setAspectRelated() default false;
+        boolean applyAspectOnState() default true;
 	Param[] params() default {};
 	TransitionSpec[] transitions();
 }

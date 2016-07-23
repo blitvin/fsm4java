@@ -15,8 +15,13 @@
  *   You should have received a copy of the GNU General Public License
  *   along with FSM4Java  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.blitvin.statemachine;
+
+import org.blitvin.statemachine.StateMachineEvent;
+
+
+
+
 
 /**
  * This interface defines object containing predefined aspects that can be used in AspectEnabledStateMachine.
@@ -34,7 +39,7 @@ public interface StateMachineAspects <EventType extends Enum<EventType>>{
 	boolean onTransitionStart(StateMachineEvent<EventType> event);
 	/**
 	 * Invoked if transition returned null ( that is transition from and to current state  without
-	 * need to invoke callbacks for the transition processing)
+	 * need to invoke callback for the transition processing)
 	 * @param event that triggered the transition
 	 */
 	void onNullTransition(StateMachineEvent<EventType> event);
@@ -65,7 +70,7 @@ public interface StateMachineAspects <EventType extends Enum<EventType>>{
 	void onTransitionFinish(StateMachineEvent<EventType> event, 
 				State<EventType>currentState,State<EventType> prevState);
 	/**
-	 * callback for specifying containing machine ( this may be usefull for aspects to access FSM the aspect object associated with)
+	 * callback for specifying containing machine ( this may be useful for aspects to access FSM the aspect object associated with)
 	 * @param machine FSM the aspect associated with
 	 */
 	void setContainingMachine(StateMachine<EventType> machine);

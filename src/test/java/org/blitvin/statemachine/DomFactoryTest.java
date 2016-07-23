@@ -24,11 +24,8 @@ import java.lang.reflect.InvocationTargetException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.blitvin.StateMachine.domfactorytest.*;
-import org.blitvin.statemachine.BadStateMachineSpecification;
-import org.blitvin.statemachine.DOMStateMachineFactory;
-import org.blitvin.statemachine.InvalidEventType;
-import org.blitvin.statemachine.SimpleStateMachine;
+import org.blitvin.statemachine.domfactorytest.*;
+
 
 public class DomFactoryTest {
 
@@ -44,15 +41,16 @@ public class DomFactoryTest {
 	}
 
 	@Test
-	public void testCorrect() throws BadStateMachineSpecification, InvalidEventType {
+	public void testCorrect() throws BadStateMachineSpecification, InvalidEventException {
 		SimpleStateMachine<TestEnum> machine =(SimpleStateMachine<TestEnum>)DOMStateMachineFactory.getDefaultFactory().getStateMachine("correctMachine");
 		machine.transit(new TestMachineEvent<TestEnum>(TestEnum.enum1));
-		assertEquals("state2",machine.getCurrentState().getStateName());
-		assertTrue(machine.getCurrentState().getTransitionByEvent(TestEnum.enum1) instanceof TestTransition);
+		assertEquals("state2",machine.getNameOfCurrentState());
 		assertFalse(machine.isInFinalState());
+                assertEquals(1,((TestState<TestEnum>)(machine.getCurrentState())).getCounter());
 		machine.transit(new TestMachineEvent<TestEnum>(TestEnum.enum2));
-		assertEquals("state3",machine.getCurrentState().getStateName());
-		assertFalse(machine.getCurrentState().getTransitionByEvent(TestEnum.enum1) instanceof TestTransition);
+                assertEquals(1,((TestState)machine.getCurrentState()).getCounter());
+                machine.transit(new TestMachineEvent<TestEnum>(TestEnum.enum3));
+		assertEquals("state3",machine.getNameOfCurrentState());
 		assertTrue(machine.isInFinalState());
 	}
 	
@@ -75,7 +73,7 @@ public class DomFactoryTest {
 			fail("machine cration should fail because of bad state");
 		}
 		catch(BadStateMachineSpecification e){
-			assertEquals("SimpleTransaction : can't find state with name state5", e.getMessage());
+			assertEquals("Can't find state state5", e.getMessage());
 		}
 	}
 	@Test
@@ -97,7 +95,7 @@ public class DomFactoryTest {
 			fail("machine cration should fail because of class specified in as transition is not inherited from Transition");
 		}
 		catch(BadStateMachineSpecification e){
-			assertEquals("org.blitvin.StateMachine.domfactorytest.TestEnum is not inherited from org.blitvin.statemachine.Transition",e.getMessage());
+			assertEquals("org.blitvin.statemachine.domfactorytest.TestEnum is not inherited from org.blitvin.statemachine.State",e.getMessage());
 		}
 	}
 	
@@ -119,7 +117,7 @@ public class DomFactoryTest {
 			fail("machine cration should fail because machine with the name doesn't exist");
 		}
 		catch(BadStateMachineSpecification e){
-			assertEquals("Unknown state machine name:nonExistingMachine", e.getMessage());
+			assertEquals("Unknown state machine :nonExistingMachine", e.getMessage());
 		}
 	}
 	

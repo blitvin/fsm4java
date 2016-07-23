@@ -16,42 +16,70 @@
  *   along with FSM4Java  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.blitvin.statemachine.annotated;
+
 import org.blitvin.statemachine.BadStateMachineSpecification;
+import static org.blitvin.statemachine.StateMachineBuilder.FSM_TYPES.BASIC;
 import org.blitvin.statemachine.concurrent.TestEnum;
+import org.blitvin.statemachine.domfactorytest.TestState;
+
 public class ClassWithFSMMember {
-	@States(name="myMachine",
-			value={@StateSpec(name="state1", isFinal=false, isInitial=true, 
-					transitions={@TransitionSpec(event="A",params={@Param(name="toState",value="state2")}),
-								 @TransitionSpec(event="B",params={@Param(name="toState",value="state3")})}			
-				    ),
-				   @StateSpec(name="state2",
-				    transitions={@TransitionSpec(event="A", params={@Param(name="toState",value="state3")}),
-					      	    @TransitionSpec(isDefaultTransition=true, params={@Param(name="toState", value="state2")})
-							}
-				    ),
-		           @StateSpec(name="state3", isFinal=true,
-				    transitions={@TransitionSpec(event="A",params={@Param(name="toState",value="state1")}),
-					     		 @TransitionSpec(event="B",params={@Param(name="toState",value="state1")}),
-						    	 @TransitionSpec(event="C",params={@Param(name="toState",value="state2")})})
-		}
-	)
-	public AnnotatedStateMachine<TestEnum> machine;
-	
-	public static final int NO_AUTODETECTION=0;
-	public static final int AUTODETCTION_SUCCESSFUL = 1;
-	public static final int AUTODETECTION_FAIL =2;
-	public ClassWithFSMMember(int autodetectVal) throws BadStateMachineSpecification{
-		switch(autodetectVal){
-		case AUTODETCTION_SUCCESSFUL:
-			machine = new AnnotatedStateMachine<>(TestEnum.class,"myMachine");
-			break;
-		case NO_AUTODETECTION:
-			machine = new AnnotatedStateMachine<>(TestEnum.class,ClassWithFSMMember.class,"machine");
-			break;
-		case AUTODETECTION_FAIL:
-			machine = new AnnotatedStateMachine<>(TestEnum.class,"noSuchMachine");
-			break;
-		} 
-		machine.completeInitialization(null);
-	}
+    /*@StateMachineSpec(eventTypeClass = TestEnum.class type=StateMachineBuilder.FSM_TYPES.BASIC name="" states=(
+     @States(
+     value={@StateSpec(name="state1" isFinal=falsem isInitial=true)}
+     )  
+     )
+     @States(
+     value={@StateSpec(name="state1", isFinal=false, isInitial=true, 
+     transitions={@TransitionSpec(event="A",params={@Param(name="toState",value="state2")}),
+     @TransitionSpec(event="B",params={@Param(name="toState",value="state3")})}			
+     ),
+     @StateSpec(name="state2",
+     transitions={@TransitionSpec(event="A", params={@Param(name="toState",value="state3")}),
+     @TransitionSpec(isDefaultTransition=true, params={@Param(name="toState", value="state2")})
+     }
+     ),
+     @StateSpec(name="state3", isFinal=true,
+     transitions={@TransitionSpec(event="A",params={@Param(name="toState",value="state1")}),
+     @TransitionSpec(event="B",params={@Param(name="toState",value="state1")}),
+     @TransitionSpec(event="C",params={@Param(name="toState",value="state2")})})
+     }
+     ))*/
+
+    @StateMachineSpec(eventTypeClass = TestEnum.class, name = "myStateMachine", type = BASIC,
+            states = {
+                @StateSpec(name = "state1", isFinal = false, isInitial = true, implClass = TestState.class,
+                        transitions = {
+                            @TransitionSpec(event = "A", params = {@Param(name = "toState", value = "state2")}),
+                            @TransitionSpec(event = "B", params = {@Param(name="toState", value="state3")})
+                        }),
+                @StateSpec(name="state2", implClass = TestState.class, transitions = {
+                    @TransitionSpec(event= "A", params={@Param(name="toState", value="state3")}),
+                    @TransitionSpec(isDefaultTransition = true, params={@Param(name = "toState", value="state2")})
+                    }),
+                @StateSpec(name="state3",isFinal=true, implClass = TestState.class, transitions= {
+                    @TransitionSpec(event="B",params={@Param(name="toState",value="state1")}),
+                    @TransitionSpec(event="C",params={@Param(name="toState",value="state2")})
+                })
+            }
+    )
+    public AnnotatedStateMachine<TestEnum> machine;
+
+    public static final int NO_AUTODETECTION = 0;
+    public static final int AUTODETCTION_SUCCESSFUL = 1;
+    public static final int AUTODETECTION_FAIL = 2;
+
+    public ClassWithFSMMember(int autodetectVal) throws BadStateMachineSpecification {
+        switch (autodetectVal) {
+            case AUTODETCTION_SUCCESSFUL:
+                machine = new AnnotatedStateMachine<>("myStateMachine");
+                break;
+            case NO_AUTODETECTION:
+                machine = new AnnotatedStateMachine<>(ClassWithFSMMember.class, "machine");
+                break;
+            case AUTODETECTION_FAIL:
+                machine = new AnnotatedStateMachine<>("noSuchMachine");
+
+                break;
+        }
+    }
 }

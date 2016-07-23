@@ -1,5 +1,5 @@
 /*
- * (C) Copyright Boris Litvin 2014, 2015
+ * (C) Copyright Boris Litvin 2014 - 2016
  * This file is part of FSM4Java library.
  *
  *  FSM4Java is free software: you can redistribute it and/or modify
@@ -15,112 +15,70 @@
  *   You should have received a copy of the GNU General Public License
  *   along with FSM4Java  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.blitvin.statemachine.annotated;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.HashMap;
-
 import org.blitvin.statemachine.BadStateMachineSpecification;
-import org.blitvin.statemachine.State;
-import org.blitvin.statemachine.Transition;
+import org.blitvin.statemachine.StateMachineBuilder;
 
 /**
- * This class parses annotation and converts those to form that can be used by StateMachine constructors
+ * This class converts annotation data to builder methods
  * @author blitvin
- *
- * @param <EventType> FSM alphabet 
+ * 
  */
-class AnnotationParser<EventType extends Enum<EventType>> {
+class AnnotationParser {
+    public static StateMachineBuilder parse(StateMachineSpec annotation) throws BadStateMachineSpecification{
+        StateMachineBuilder retVal = new StateMachineBuilder<>(annotation.type(),annotation.eventTypeClass());
+        for(StateSpec curStateSpec: annotation.states()){
+            if (curStateSpec.applyAspectOnState()) {
+                retVal.addState(curStateSpec.name(), curStateSpec.applyAspectOnState()? 
+                        StateMachineBuilder.STATE_PROPERTIES_ASPECT | StateMachineBuilder.STATE_PROPERTIES_BASIC :
+                        StateMachineBuilder.STATE_PROPERTIES_BASIC);
+            } else {
+                retVal.addState(curStateSpec.name());
+            }
+            if (curStateSpec.isFinal())
+                retVal.markStateAsFinal();
+            if (curStateSpec.isInitial())
+                retVal.markStateAsInitial();
+            for(Param param: curStateSpec.params())
+                retVal.addProperty(param.name(), param.value());
+            if (curStateSpec.implClass() != null)
+                retVal.addProperty(StateMachineBuilder.STATE_CLASS_PROPERTY, curStateSpec.implClass());
+            
+            for(TransitionSpec transition:curStateSpec.transitions()){
+                if (transition.isDefaultTransition()) {
+                    if (transition.type() == null)
+                        retVal.addDefaultTransition();
+                    else
+                        retVal.addDefaultTransition(transition.type());
+                } else {
+                    if (transition.type() == null)
+                        retVal.addTransition(getEventTypeConst(annotation.eventTypeClass(), transition.event()));
+                    else
+                        retVal.addTransition(getEventTypeConst(annotation.eventTypeClass(), transition.event()), 
+                                transition.type());
+                }
+                for(Param param: transition.params())
+                    retVal.addProperty(param.name(), param.value());
+            }
+        }
+        return retVal;
+    }
+    
+    private static final Class<?>[] VALUE_OF_PARAMS = {String.class};
 	
-	@SuppressWarnings("rawtypes")
-	protected static final Class[] STATE_CONSTUCTOR_PARAMS={String.class,Boolean.class};
-	@SuppressWarnings("rawtypes")
-	protected static final Class[] VALUE_OF_PARAMS = {String.class};
-	
-	final private HashMap<String,org.blitvin.statemachine.State<EventType>> states;
-	private HashMap<Object, HashMap<Object, Object>> initializer;
-	private org.blitvin.statemachine.State<EventType> initialState;
-	final private Method valueOf;
-	public AnnotationParser(HashMap<String,org.blitvin.statemachine.State<EventType>> map,
-			Class<? extends Enum<EventType>> eventTypeClass) throws BadStateMachineSpecification{
-		states = map;
-		initializer = new HashMap<Object, HashMap<Object,Object>>();
+    private static Enum getEventTypeConst(Class<? extends Enum<?>> eventTypeClass, String value) throws BadStateMachineSpecification{
+		Object[] mvargs =  new Object[1];
+		mvargs[0] = value;
 		try {
-			valueOf = eventTypeClass.getMethod("valueOf", VALUE_OF_PARAMS);
-		} catch ( IllegalArgumentException | NoSuchMethodException | SecurityException e) {
-			throw new BadStateMachineSpecification(eventTypeClass.toString() +" is not a valid event type constant", e);
+			Method vo = eventTypeClass.getMethod("valueOf", VALUE_OF_PARAMS);
+			return (Enum)vo.invoke(null, mvargs);
+		} catch (IllegalAccessException | IllegalArgumentException
+				| InvocationTargetException | NoSuchMethodException | SecurityException e) {
+			throw new BadStateMachineSpecification(value +" is not a valid event type constant", e);
 		}
-	}
-	
-	
-	public State<EventType> getInitialState(){
-		return initialState;
-	}
-	
-	public HashMap<Object, HashMap<Object, Object>> getInitializer(){
-		return initializer;
-	}
-	@SuppressWarnings("unchecked")
-	public void parse(org.blitvin.statemachine.annotated.StateSpec[] statesAnnotations) throws BadStateMachineSpecification {
-		for(StateSpec stateAnnotation : statesAnnotations){
-			if(states.containsKey(stateAnnotation.name())){
-				throw new BadStateMachineSpecification("Multiple states with the same name "+stateAnnotation.name());
-			}
-			@SuppressWarnings({  "rawtypes" })
-			Constructor<? extends State> c;
-			try {
-				c = stateAnnotation.implClass().getConstructor(STATE_CONSTUCTOR_PARAMS);
-			} catch (NoSuchMethodException | SecurityException e1) {
-				throw new BadStateMachineSpecification("Can't find constructor for "+stateAnnotation.implClass().toString(), e1);
-			}
-			Object[] args = new Object[2];
-			args[0] = stateAnnotation.name();
-			args[1] =  stateAnnotation.isFinal();
-			State<EventType> s;
-			try {
-			 s = (State<EventType>) c.newInstance(args);
-			} catch (InstantiationException | IllegalAccessException
-					| IllegalArgumentException | InvocationTargetException e) {
-				throw new BadStateMachineSpecification("Failed to instantiate object of "+stateAnnotation.implClass().toString(),e);
-			}
-			states.put(stateAnnotation.name(), s);
-			if (stateAnnotation.isInitial())
-				initialState = s;
-			setInitializers(s, stateAnnotation.params());
-			setTransitions(s, stateAnnotation.transitions());
-		}
-	}
-	
-	private void setInitializers(Object o, Param[] params){
-		if (params.length == 0)
-			return;
-		HashMap<Object,Object> initHash = new HashMap<Object, Object>();
-		for(Param param: params){
-			initHash.put(param.name(), param.value());
-		}
-		initializer.put(o, initHash);
-	}
-	
-	private void setTransitions(State<EventType> state,TransitionSpec[] transitions) throws BadStateMachineSpecification{
-		HashMap<EventType,Transition<EventType>> transitionsMap= new HashMap<EventType, Transition<EventType>>();
-		for(TransitionSpec transitionSpec: transitions){
-			try {
-				Transition<EventType> t = transitionSpec.implClass().newInstance();
-				
-				if (transitionSpec.isDefaultTransition())
-					transitionsMap.put(null,t);
-				else {
-					Object[] args = new Object[1];
-					args[0] = transitionSpec.event();
-					transitionsMap.put((EventType)valueOf.invoke(null, args),t);
-				}
-				setInitializers(t, transitionSpec.params());
-			} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-				throw new BadStateMachineSpecification("can't create transition object of class"+transitionSpec.implClass().toString(), e);
-			}
-		}
-		state.setTransitions(transitionsMap);
 	}
 }

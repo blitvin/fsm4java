@@ -18,30 +18,42 @@
 package org.blitvin.statemachine.annotated;
 
 import org.blitvin.statemachine.BadStateMachineSpecification;
+import static org.blitvin.statemachine.StateMachineBuilder.FSM_TYPES.BASIC;
+import org.blitvin.statemachine.concurrent.TestEnum;
+import org.blitvin.statemachine.domfactorytest.TestState;
 
-@States(name="annotatedSubclass",value=
-{@StateSpec(name="state1", isFinal=false, isInitial=true, 
-		transitions={@TransitionSpec(event="A",params={@Param(name="toState",value="state2")}),
-					 @TransitionSpec(event="B",params={@Param(name="toState",value="state3")})}			
-		),
-@StateSpec(name="state2",
-		transitions={@TransitionSpec(event="A", params={@Param(name="toState",value="state3")}),
-					 @TransitionSpec(isDefaultTransition=true, params={@Param(name="toState", value="state2")})
-					}
-		),
-@StateSpec(name="state3", isFinal=true,
-		transitions={@TransitionSpec(event="A",params={@Param(name="toState",value="state1")}),
-					 @TransitionSpec(event="B",params={@Param(name="toState",value="state1")}),
-					 @TransitionSpec(event="C",params={@Param(name="toState",value="state2")})})
-}
+@StateMachineSpec(eventTypeClass = TestEnum.class, name = "myStateMachine", type = BASIC,
+        states = {
+            @StateSpec(name = "state1", isFinal = false, isInitial = true, implClass = TestState.class,
+                    transitions = {
+                        @TransitionSpec(event = "A", params = {
+                            @Param(name = "toState", value = "state2")}),
+                        @TransitionSpec(event = "B", params = {
+                            @Param(name = "toState", value = "state3")})}
+            ),
+            @StateSpec(name = "state2", implClass = TestState.class,
+                    transitions = {
+                        @TransitionSpec(event = "A", params = {
+                            @Param(name = "toState", value = "state3")}),
+                        @TransitionSpec(isDefaultTransition = true, params = {
+                            @Param(name = "toState", value = "state2")})
+                    }
+            ),
+            @StateSpec(name = "state3", isFinal = true,implClass = TestState.class,
+                    transitions = {
+                        @TransitionSpec(event = "A", params = {
+                            @Param(name = "toState", value = "state1")}),
+                        @TransitionSpec(event = "B", params = {
+                            @Param(name = "toState", value = "state1")}),
+                        @TransitionSpec(event = "C", params = {
+                            @Param(name = "toState", value = "state2")})})
+        }
 )
 public class TestAnnotatedSubclass<EventType extends Enum<EventType>> extends AnnotatedStateMachine<EventType> {
 
-	
-	public TestAnnotatedSubclass(Class<? extends Enum<EventType>> enumClass)
-			throws BadStateMachineSpecification {
-		super(enumClass);
-		completeInitialization(null);
-	}
+    public TestAnnotatedSubclass()
+            throws BadStateMachineSpecification {
+        super();
+    }
 
 }

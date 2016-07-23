@@ -1,4 +1,4 @@
-package org.blitvin.StateMachine.domfactorytest;
+package org.blitvin.statemachine.domfactorytest;
 
 public enum TestEnum {
 	enum1,

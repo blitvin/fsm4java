@@ -18,12 +18,10 @@
 package org.blitvin.statemachine;
 
 import java.io.IOException;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
@@ -56,15 +54,18 @@ public class DOMStateMachineFactory extends	StateMachineFactory {
 	
 	/* xml tags */
 	static final String STATE_MACHINE_TAG="stateMachine";
-	static final String ELEMENT_NAME_TAG ="name";
+        static final String WRAPPER_TAG="wrapper";
+        static final String ELEMENT_NAME_TAG ="name";
 	static final String IMPL_CLASS_TAG="class";
+        static final String TYPE_TAG="type";
 	static final String TRANSITION_TAG = "transition";
 	static final String IS_INITIAL_STATE_TAG="isInitial";
 	static final String IS_FINAL_STATE_TAG="isFinal";
 	static final String ON_EVENT_TAG="event";
 	static final String EVENT_TYPE_IMPL_CLASS_TAG="eventTypeClass";
 	static final String DEFAULT_TRANSITION="other_events_transition";
-	
+	static final String ENABLE_ASPECT_TAG="enableAspect";
+        
 	protected static final String XSD_FILE = "state_machines.xsd";
 	public static final String DEFAULT_XML_FILE="empty.xml";
 	public static final String DEFAULT_XML_FILE_PROPERTY = "org.blitvin.statemachine.DOMStateMachineFactoryImplementation.defaultXmlFileName";
@@ -72,37 +73,35 @@ public class DOMStateMachineFactory extends	StateMachineFactory {
 	/**
 	 * Class used for construction of state if class name is not specified explicitely
 	 */
-	public static final String DEFAULT_STATE_CLASS="org.blitvin.statemachine.State";
+	//public static final String DEFAULT_STATE_CLASS="org.blitvin.statemachine.State";
 	/**
 	 * name of default class used for transitions of the state machine 
 	 */
-	public static final String DEFAULT_TRANSITION_CLASS="org.blitvin.statemachine.SimpleTransition";
+	//public static final String DEFAULT_TRANSITION_CLASS="org.blitvin.statemachine.SimpleTransition";
 	/**
 	 * name of state machine default class
 	 */
-	public static final String DEFAULT_STATE_MACHINE_CLASS = "org.blitvin.statemachine.SimpleStateMachine";
+	//public static final String DEFAULT_STATE_MACHINE_CLASS = "org.blitvin.statemachine.SimpleStateMachine";
 	
-	@SuppressWarnings("rawtypes")
-	protected static final Class[] STATE_CONSTUCTOR_PARAMS={String.class,Boolean.class};
-	@SuppressWarnings("rawtypes")
-	protected static final Class[] VALUE_OF_PARAMS = {String.class};
-	@SuppressWarnings("rawtypes")
-	protected static final Class[] STATE_MACHINE_CONSTRUCTOR_PARAMS={Map.class,State.class};
+
+	protected static final Class<?>[] VALUE_OF_PARAMS = {String.class};
 	/* list of parsed state machine specifications */
 	protected HashMap<String,Node> stateMachineSpecs;
+        protected HashMap<String,Node> wrapperSpecs;
 	
 	protected static final HashSet<String> standardStateTags = new HashSet<>();
 	static {
 		standardStateTags.add(IS_FINAL_STATE_TAG);
 		standardStateTags.add(IS_INITIAL_STATE_TAG);
-		standardStateTags.add(IMPL_CLASS_TAG);
+                standardStateTags.add(IMPL_CLASS_TAG);
+		standardStateTags.add(ENABLE_ASPECT_TAG);
 		standardStateTags.add(ELEMENT_NAME_TAG);
 	}
 	
 	protected static final HashSet<String> standardTransitionTags = new HashSet<>();
 	static {
-		standardTransitionTags.add(ELEMENT_NAME_TAG);
-		standardTransitionTags.add(IMPL_CLASS_TAG);
+		//standardTransitionTags.add(ELEMENT_NAME_TAG);
+		standardTransitionTags.add(TYPE_TAG);
 		standardTransitionTags.add(ON_EVENT_TAG);
 	}
 	/**
@@ -152,9 +151,13 @@ public class DOMStateMachineFactory extends	StateMachineFactory {
 		    
 		    stateMachines.getDocumentElement().normalize();
 		    stateMachineSpecs = new HashMap<>();
-			NodeList nList = stateMachines.getElementsByTagName(STATE_MACHINE_TAG);
-			for (int idx =0 ; idx< nList.getLength(); ++idx)
-				stateMachineSpecs.put(((Element)nList.item(idx)).getAttribute(ELEMENT_NAME_TAG), nList.item(idx));
+                    NodeList nList = stateMachines.getElementsByTagName(STATE_MACHINE_TAG);
+                    for (int idx =0 ; idx< nList.getLength(); ++idx)
+                        stateMachineSpecs.put(((Element)nList.item(idx)).getAttribute(ELEMENT_NAME_TAG), nList.item(idx));
+                    wrapperSpecs = new HashMap<>();
+                    nList = stateMachines.getElementsByTagName(WRAPPER_TAG);
+                    for (int idx =0 ; idx< nList.getLength(); ++idx)
+                        wrapperSpecs.put(((Element)nList.item(idx)).getAttribute(ELEMENT_NAME_TAG), nList.item(idx));
 
 		} catch (ParserConfigurationException e) {
 			throw new InvalidFactoryImplementation("can't parse configuration", e);
@@ -165,131 +168,64 @@ public class DOMStateMachineFactory extends	StateMachineFactory {
 		}
 	}
 
-	/**
-	 * Returns state object, without transitions, use buildTransition for this
-	 * @param stateElement
-	 * @return state object
-	 * @throws BadStateMachineSpecification 
-	 */
-	@SuppressWarnings("rawtypes")
-	private State buildState(Element stateElement) throws BadStateMachineSpecification{
-		Class stateClass = getClass(stateElement, DEFAULT_STATE_CLASS,State.class);
-		
-			try {
-				@SuppressWarnings("unchecked")
-				Constructor c = stateClass.getConstructor(STATE_CONSTUCTOR_PARAMS);
-				Object[] args = new Object[2];
-				args[0] = stateElement.getAttribute(ELEMENT_NAME_TAG);
-				args[1] =  stateElement.hasAttribute(IS_FINAL_STATE_TAG)?Boolean.valueOf(stateElement.getAttribute(IS_FINAL_STATE_TAG)):Boolean.FALSE;
-				State s = (State) c.newInstance(args);
-				return s;
-			} catch (NoSuchMethodException|SecurityException|InstantiationException|IllegalAccessException|
-					IllegalArgumentException|InvocationTargetException e) {
-				throw new BadStateMachineSpecification("Exception during attempt to construct state "+stateElement.getAttribute(ELEMENT_NAME_TAG), e);
-			} 
-		
-		
-	}
+
 	
 	private void fillAttributes(Node n, @SuppressWarnings("rawtypes") StateMachineBuilder builder, HashSet<String> standards){
 		NamedNodeMap map = n.getAttributes();
 		for(int i =0 ; i < map.getLength(); ++i) {
 			if (!standards.contains(map.item(i).getNodeName())){
-				builder.addAttribute(map.item(i).getNodeName(), map.item(i).getNodeValue());
+				builder.addProperty(map.item(i).getNodeName(), map.item(i).getNodeValue());
 			}
 		}
 	}
 	
-	@SuppressWarnings("rawtypes")
-	private Object getEventTypeConst(Class eventTypeClass, String value) throws BadStateMachineSpecification{
+	private Enum getEventTypeConst(Class<? extends Enum<?>> eventTypeClass, String value) throws BadStateMachineSpecification{
 		Object[] mvargs =  new Object[1];
 		mvargs[0] = value;
 		try {
-			@SuppressWarnings("unchecked")
 			Method vo = eventTypeClass.getMethod("valueOf", VALUE_OF_PARAMS);
-			return vo.invoke(null, mvargs);
+			return (Enum)vo.invoke(null, mvargs);
 		} catch (IllegalAccessException | IllegalArgumentException
 				| InvocationTargetException | NoSuchMethodException | SecurityException e) {
 			throw new BadStateMachineSpecification(value +" is not a valid event type constant", e);
 		}
 	}
 	
-	/**
-	 * returns instance of state machine
-	 * each invocation creates machine with distinct set of states and transitions (no sharing of
-	 * states among instances of machine created from the same specification)
-	 * @param machineName name of state machine as specified by name attribute of StateMachine entry
-	 * @param constructorArguments object containing additional parameters to be passed to state machine's constructor
-	 * @return new instance of the machine constructed according to XML file's specifications
-	 * @throws BadStateMachineSpecification if construction failed for any reason
-	 */
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public StateMachine getStateMachine(String machineName, Object construcorArguments) throws BadStateMachineSpecification {
-		Node stateMachineNode = stateMachineSpecs.get(machineName);
-		if (stateMachineNode == null)
-			throw new BadStateMachineSpecification("Unknown state machine name:"+machineName);
-		Element stateMachineElem = (Element)stateMachineNode;
-		
-		/* event type class represents enum type of state machine alphabet*/
-		Class eventTypeClass = null;
-		
-		try {
-			eventTypeClass = Class.forName(stateMachineElem.getAttribute(EVENT_TYPE_IMPL_CLASS_TAG));
-		}catch (ClassNotFoundException e) {
-			throw new BadStateMachineSpecification("Event type class "+ EVENT_TYPE_IMPL_CLASS_TAG+ " not found", e);
-		}
-		/* event type expected to be enum */
-		if (!eventTypeClass.isEnum())
-			throw new BadStateMachineSpecification("Expecting enum class name in attribute "+EVENT_TYPE_IMPL_CLASS_TAG);
-		
-		StateMachineBuilder builder = new StateMachineBuilder<>(machineName,
-				getClass((Element)stateMachineNode,DEFAULT_STATE_MACHINE_CLASS,SimpleStateMachine.class));
-		
-		NodeList stateNodes =stateMachineElem.getChildNodes();
-		for(int i = 0 ; i < stateNodes.getLength(); ++i) {
-			if (stateNodes.item(i).getNodeType() != Node.ELEMENT_NODE)
-				continue;
-			Element stateElem = (Element) stateNodes.item(i);
-			//if (stateElem.hasAttribute(IMPL_CLASS_TAG))
-			
-			State s = buildState(stateElem);
-			builder.addState(s);
-			if (stateElem.hasAttribute(IS_INITIAL_STATE_TAG) && Boolean.valueOf(stateElem.getAttribute(IS_INITIAL_STATE_TAG))){
-				builder.markStateAsInitial();
-			}
-			fillAttributes(stateElem, builder, standardStateTags);
-			NodeList transitionNodes = stateElem.getChildNodes();
-			/* now construct transitions for current state */
-			for(int j = 0 ; j < transitionNodes.getLength() ; ++j) {
-				Node transitionNode = transitionNodes.item(j);
-				if ( transitionNode.getNodeType()== Node.ELEMENT_NODE) {
-					Class transitionClass = getClass((Element) transitionNode,DEFAULT_TRANSITION_CLASS,Transition.class);
-					try {
-						Transition transition = (Transition) transitionClass.newInstance();
-						if (transitionNode.getNodeName().equals(DEFAULT_TRANSITION)) {
-							builder.addDefaultTransition(transition);
-						}
-						else {
-							Object eventType = getEventTypeConst(eventTypeClass, 
-									((Element)transitionNode).getAttribute(ON_EVENT_TAG));
-							builder.addTransition((Enum)eventType, transition);
-						}
-						fillAttributes(transitionNode, builder, standardTransitionTags);
-					}
-					catch (InstantiationException | IllegalAccessException e) {
-						throw new BadStateMachineSpecification("Can't create transition ",e);
-					}
-				}
-			}
-			
-		}
-		if (construcorArguments == null)
-			return builder.build();
-		else
-			return builder.build(construcorArguments);
-		
-	}
-	
+        private StateMachineBuilder.FSM_TYPES getFSMType(Node stateMachineNode){
+            Element fsmElem = (Element)stateMachineNode;
+            if (fsmElem.hasAttribute(TYPE_TAG))
+                return StateMachineBuilder.FSM_TYPES.valueOf(((Element) stateMachineNode).getAttribute(TYPE_TAG));
+            else
+                return StateMachineBuilder.FSM_TYPES.SIMPLE; //default value in xsd
+        }
+        
+        private void addState(Element element, StateMachineBuilder builder) throws BadStateMachineSpecification{
+            // this will be refactored when something other than basic state is instroduced
+            if (element.hasAttribute(ENABLE_ASPECT_TAG)) {
+                int properties = StateMachineBuilder.STATE_PROPERTIES_BASIC;
+                properties |= (Boolean.parseBoolean(element.getAttribute(ENABLE_ASPECT_TAG))?
+                        StateMachineBuilder.STATE_PROPERTIES_ASPECT:0);
+                builder.addState(element.getAttribute(ELEMENT_NAME_TAG), properties);
+            } else {
+                builder.addState(element.getAttribute(ELEMENT_NAME_TAG));
+            }
+            
+            fillAttributes(element, builder, standardStateTags);
+            // special treatment for predefined attributes
+            Class stateClass = getClass(element, State.class);
+            if (stateClass != null)
+                builder.addProperty(StateMachineBuilder.STATE_CLASS_PROPERTY, stateClass);
+            if (element.hasAttribute(IS_FINAL_STATE_TAG) && 
+                    Boolean.parseBoolean(element.getAttribute(IS_FINAL_STATE_TAG)))
+                builder.markStateAsFinal();
+            if (element.hasAttribute(IS_INITIAL_STATE_TAG) && 
+                    Boolean.parseBoolean(element.getAttribute(IS_INITIAL_STATE_TAG)))
+                builder.markStateAsInitial();
+            
+            
+        }
+        
+
 	/**
 	 * returns instance of state machine
 	 * each invocation creates machine with distinct set of states and transitions (no sharing of
@@ -298,20 +234,19 @@ public class DOMStateMachineFactory extends	StateMachineFactory {
 	 * @return new instance of the machine constructed according to XML file's specifications
 	 * @throws BadStateMachineSpecification if construction failed for any reason
 	 */
-	@SuppressWarnings({ "rawtypes" })
 	@Override
-	public StateMachine getStateMachine(String machineName) throws BadStateMachineSpecification {
+	public StateMachine<? extends Enum<?>> getStateMachine(String machineName) throws BadStateMachineSpecification {
 		return getStateMachine(machineName,null);
 	}
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	private Class getClass(Element theNode, String defaultClassName,Class template)
+	
+        private Class<?> getClass(Element theNode, Class template)
 			throws BadStateMachineSpecification {
-		Class retVal = null;
+		Class<?> retVal = null;
 		String className = null;
 		if (theNode.hasAttribute(IMPL_CLASS_TAG))
 			className = theNode.getAttribute(IMPL_CLASS_TAG);
 		else
-			className = defaultClassName;
+			return null;
 		
 		try {
 			retVal = Class.forName(className);
@@ -324,4 +259,77 @@ public class DOMStateMachineFactory extends	StateMachineFactory {
 
 			return retVal;
 	}
+
+    @Override
+    public StateMachine<? extends Enum<?>> getStateMachine(String name, HashMap<Object, Object> fsmProperties) throws BadStateMachineSpecification {
+        //handle wrappers
+        StateMachineBuilder<? extends Enum<?>> builder = getBuilder(name);
+        if (fsmProperties != null)
+            builder.addFSMProperties(fsmProperties);
+        return builder.build();
+    }
+
+    @Override
+    public StateMachineBuilder<? extends Enum<?>> getBuilder(String name) throws BadStateMachineSpecification{
+        Node stateMachineNode = stateMachineSpecs.get(name);
+        
+        if (stateMachineNode == null)
+            throw new BadStateMachineSpecification("Unknown state machine :"+name);
+        
+                
+        Element stateMachineElem = (Element)stateMachineNode;
+        
+        /* event type class represents enum type of state machine alphabet*/
+	Class eventTypeClass = null;
+	try {
+            eventTypeClass = Class.forName(stateMachineElem.getAttribute(EVENT_TYPE_IMPL_CLASS_TAG));
+	}catch (ClassNotFoundException e) {
+            throw new BadStateMachineSpecification("Event type class "+ EVENT_TYPE_IMPL_CLASS_TAG+ " not found", e);
+	}
+	/* event type expected to be enum */
+	if (!eventTypeClass.isEnum())
+            throw new BadStateMachineSpecification("Expecting enum class name in attribute "+EVENT_TYPE_IMPL_CLASS_TAG);
+		
+		
+        StateMachineBuilder builder = new StateMachineBuilder(getFSMType(stateMachineNode), eventTypeClass);
+        
+        NodeList stateNodes =stateMachineElem.getChildNodes();
+	for(int i = 0 ; i < stateNodes.getLength(); ++i) {
+            if (stateNodes.item(i).getNodeType() != Node.ELEMENT_NODE)
+		continue;
+            Element stateElem = (Element) stateNodes.item(i);
+            addState(stateElem, builder);
+            NodeList transitionNodes = stateElem.getChildNodes();
+            /* now construct transitions for current state */
+            for(int j = 0 ; j < transitionNodes.getLength() ; ++j) {
+                Node transitionNode = transitionNodes.item(j);
+		if ( transitionNode.getNodeType()== Node.ELEMENT_NODE) {
+                    Element transitionElem = (Element)transitionNode;
+                    if (transitionElem.hasAttribute(TYPE_TAG)) {
+                        StateMachineBuilder.TRANSITION_TYPE type = 
+                                StateMachineBuilder.TRANSITION_TYPE.valueOf(transitionElem.getAttribute(TYPE_TAG));
+                        if (transitionNode.getNodeName().equals(DEFAULT_TRANSITION)) {
+                            builder.addDefaultTransition(type);
+                        } else  {
+                            builder.addTransition(getEventTypeConst(eventTypeClass, 
+						transitionElem.getAttribute(ON_EVENT_TAG)),type);
+                        }
+                        
+                    } else {
+                        if (transitionNode.getNodeName().equals(DEFAULT_TRANSITION)) {
+                            builder.addDefaultTransition();
+                        } else  {
+                            builder.addTransition(getEventTypeConst(eventTypeClass, 
+						transitionElem.getAttribute(ON_EVENT_TAG)));
+                        }    
+                    }
+                    fillAttributes(transitionNode, builder, standardTransitionTags);
+                }
+            }
+        }
+                        
+        return builder;
+    }
+
+   
 }

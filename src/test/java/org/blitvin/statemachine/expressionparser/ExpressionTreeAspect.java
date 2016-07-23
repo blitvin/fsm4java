@@ -22,7 +22,12 @@ import org.blitvin.statemachine.State;
 import org.blitvin.statemachine.StateMachine;
 import org.blitvin.statemachine.StateMachineAspects;
 import org.blitvin.statemachine.StateMachineEvent;
-
+/**
+ * This class is an example class demonstrating aspects work on syntaxFSM state
+ * machine. It just prints information at point-cuts. In order to see how this works
+ * change type of syntaxFSM to ASPECT and set the aspect object.
+ * @author blitvin
+ */
 public class ExpressionTreeAspect implements StateMachineAspects<SyntaxTokensEnum> {
 
 	@Override

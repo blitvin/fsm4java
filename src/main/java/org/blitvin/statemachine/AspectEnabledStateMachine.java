@@ -1,5 +1,5 @@
 /*
- * (C) Copyright Boris Litvin 2014, 2015
+ * (C) Copyright Boris Litvin 2014 - 2016
  * This file is part of FSM4Java library.
  *
  *  FSM4Java is free software: you can redistribute it and/or modify
@@ -15,67 +15,35 @@
  *   You should have received a copy of the GNU General Public License
  *   along with FSM4Java  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.blitvin.statemachine;
 
 import java.util.HashMap;
+import java.util.Map;
+import static org.blitvin.statemachine.StateMachineBuilder.ASPECTS_PROPERTY;
+
 /**
- * AspectEnabledStateMachine is a subclass of SimpleStateMachine that allows poor man's AOP.
- * This class works mostly as SimpleStateMachine, with the only difference that it injects aspect
- * invocations during processing of transition
- * 
- * @author blitvin
  *
- * @param <EventType> state machine's alphabet
+ * @author blitvin
+ * @param <EventType>
  */
-public class AspectEnabledStateMachine<EventType extends Enum<EventType>> extends
+public class AspectEnabledStateMachine <EventType extends Enum<EventType>> extends
 		SimpleStateMachine<EventType> {
-	private StateMachineAspects<EventType> aspects = null;
 	
 	public void setAspects(StateMachineAspects<EventType> aspects) {
-		this.aspects = aspects;
+                setProperty(ASPECTS_PROPERTY, aspects);
 	}
 	
-	public AspectEnabledStateMachine(HashMap<String, State<EventType>> states,
-			State<EventType> initialState) throws BadStateMachineSpecification {
-		super(states, initialState);
+	AspectEnabledStateMachine(HashMap<String, FSMNode<EventType>> nodes,
+			FSMNode<EventType> initial) throws BadStateMachineSpecification {
+		super(nodes, initial);
 	}
-
-	public AspectEnabledStateMachine(HashMap<String, State<EventType>> states,
-			State<EventType> initialState,
-			HashMap<Object, HashMap<Object, Object>> initializer)
-			throws BadStateMachineSpecification {
-		super(states, initialState, initializer);
-	}
-	
-	/**
-	 * the same business logic as transit of SimpleStateMachine.
-	 */
-	@Override
-	public void transit(StateMachineEvent<EventType> event) throws InvalidEventType{
-		if (aspects != null &&!aspects.onTransitionStart(event)) return;
-		event2Proceed = event;
-		do {
-			State<EventType> newState = currentState.transit(event);
-			event2Proceed = null;
-			if (newState != null) {
-				if (aspects != null && !aspects.onControlLeavesState(event,currentState,newState))
-					return;
-				currentState.onStateIsNoLongerCurrent(event, newState);
-				State<EventType> prevState = currentState;
-				currentState = newState;
-				if (aspects != null && !aspects.onControlEntersState(event,currentState,prevState))
-					return;
-				currentState.onStateBecomesCurrent(event, prevState);
-				if (aspects != null )
-					aspects.onTransitionFinish(event, currentState, prevState);
-			} else {
-				if (aspects != null)
-					aspects.onNullTransition(event);
-			}
-		}while( event2Proceed != null);
-		
-	}
-
-
+        
+    @Override
+    public void completeInitialization(Map<?, Map<?, ?>> initializer) throws BadStateMachineSpecification {
+        super.completeInitialization(initializer);
+        if (getProperty(ASPECTS_PROPERTY) == null || 
+                (!(getProperty(ASPECTS_PROPERTY) instanceof StateMachineAspects)))
+            throw new BadStateMachineSpecification("Aspects object is not defined or not instance of StateMachineAspects");
+    }
+    
 }

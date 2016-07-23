@@ -17,79 +17,117 @@
  */
 package org.blitvin.statemachine.concurrent;
 
-import java.util.Collection;
-import java.util.HashMap;
-
-import org.blitvin.statemachine.BadStateMachineSpecification;
-import org.blitvin.statemachine.InvalidEventType;
+import java.util.Set;
+import org.blitvin.statemachine.FSMWrapper;
+import org.blitvin.statemachine.FSMWrapperException;
+import org.blitvin.statemachine.FSMWrapperTransport;
+import org.blitvin.statemachine.InvalidEventException;
 import org.blitvin.statemachine.State;
 import org.blitvin.statemachine.StateMachine;
 import org.blitvin.statemachine.StateMachineEvent;
 
 /**
- * This class wraps regular (not thread safe) FSM. It enforces thread safety by usage of intrinsic lock on all state modifying 
- * operations. One should use this class for situation of low congestion of processed events. For more sophisticated processing
- * (e.g. including speculative execution) or congested scenarios use ConcurrentStateMachine class 
+ * This class wraps regular (not thread safe) FSM. It enforces thread safety by
+ * usage of intrinsic lock on all state modifying operations. One should use
+ * this class for situation of low congestion of processed events. For more
+ * sophisticated processing (e.g. including speculative execution) or congested
+ * scenarios use ConcurrentStateMachine class
+ *
  * @author blitvin
  *
  * @param <EventType>
  */
-public class SyncronizedStateMachine<EventType extends Enum<EventType>> implements StateMachine<EventType> {
+public class SyncronizedStateMachine<EventType extends Enum<EventType>> extends FSMWrapper<EventType> {
 
-	private final StateMachine<EventType> implementation;
-	public SyncronizedStateMachine(StateMachine<EventType> implementation){
-		this.implementation = implementation;
-	}
-	@Override
-	public synchronized void transit(StateMachineEvent<EventType> event)
-			throws InvalidEventType {
-			implementation.transit(event);
-	}
+    public SyncronizedStateMachine(StateMachine<EventType> wrapped) {
+        super(wrapped);
+    }
 
-	@Override
-	public boolean isValidState(State<EventType> state) {
-		return implementation.isValidState(state);
-	}
+    public StateMachine<EventType> getUnderlyingFSM() {
+        return wrapped;
+    }
 
-	@Override
-	public synchronized boolean isInFinalState() {
-		return implementation.isInFinalState();
-	}
+    @Override
+    public synchronized void transit(StateMachineEvent<EventType> event)
+            throws InvalidEventException {
+        wrapped.transit(event);
+    }
 
-	@Override
-	public synchronized State<EventType> getCurrentState() {
-		return implementation.getCurrentState();
-	}
+    /*@Override
+     public boolean isValidState(State<EventType> state) {
+     return wrapped.isValidState(state);
+     }*/
+    @Override
+    public synchronized boolean isInFinalState() {
+        return wrapped.isInFinalState();
+    }
 
-	@Override
-	public Collection<State<EventType>> getStates() {
-		return implementation.getStates();
-	}
+    @Override
+    public synchronized State<EventType> getCurrentState() {
+        return wrapped.getCurrentState();
+    }
 
-	@Override
-	public State<EventType> getStateByName(String stateName) {
-		return implementation.getStateByName(stateName);
-	}
-
-	@Override
-	public synchronized void completeInitialization(
-			HashMap<Object, HashMap<Object, Object>> initializer)
-			throws BadStateMachineSpecification {
-		if (!implementation.initializationCompleted())
-			implementation.completeInitialization(initializer);
+    /*@Override
+     public Collection<State<EventType>> getStates() {
+     return wrapped.getStates();
+     }*/
+    @Override
+    public State<EventType> getStateByName(String stateName) {
+        return wrapped.getStateByName(stateName);
+    }
+    /*
+     @Override
+     public synchronized void completeInitialization(
+     HashMap<Object, HashMap<Object, Object>> initializer)
+     throws BadStateMachineSpecification {
+     if (!wrapped.initializationCompleted())
+     wrapped.completeInitialization(initializer);
 		
-	}
+     }
 
-	@Override
-	public synchronized boolean initializationCompleted() {
-		return implementation.initializationCompleted();
-	}
-	@Override
-	public void generateInternalEvent(StateMachineEvent<EventType> internalEvent) {
-		synchronized (this) {
-			implementation.generateInternalEvent(internalEvent);
-		} 
+     @Override
+     public synchronized boolean initializationCompleted() {
+     return wrapped.initializationCompleted();
+     }
+     @Override
+     public void generateInternalEvent(StateMachineEvent<EventType> internalEvent) {
+     synchronized (this) {
+     wrapped.generateInternalEvent(internalEvent);
+     } 
 		
-	}
+     }
+     */
+
+    @Override
+    public synchronized boolean setProperty(Object name, Object value) {
+        return wrapped.setProperty(name, value);
+    }
+
+    @Override
+    public synchronized Object getProperty(Object name) {
+        return wrapped.getProperty(name);
+    }
+
+    @Override
+    public synchronized void acceptWrapperTransport(FSMWrapperTransport<EventType> transport)
+    throws FSMWrapperException{
+        wrapped.acceptWrapperTransport(transport);
+    }
+
+    @Override
+    public String getNameOfCurrentState() {
+        return wrapped.getNameOfCurrentState();
+    }
+
+    @Override
+    public Set<String> getStateNames() {
+        return wrapped.getStateNames();
+    }
+
+    @Override
+    public synchronized boolean replaceWrappedWith(StateMachine<EventType> newRef) {
+        wrapped = newRef;
+        return true;
+    }
 
 }

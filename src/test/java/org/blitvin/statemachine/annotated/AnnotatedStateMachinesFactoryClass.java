@@ -17,31 +17,46 @@
  */
 package org.blitvin.statemachine.annotated;
 
+import static org.blitvin.statemachine.StateMachineBuilder.FSM_TYPES.BASIC;
 import org.blitvin.statemachine.concurrent.TestEnum;
+import org.blitvin.statemachine.domfactorytest.TestState;
 
-@StateMachines({@StateMachineSpec(name="MyStateMachine", 
-					eventTypeClass = TestEnum.class , 
-					states = {@StateSpec(name="state1", isFinal=false, isInitial=true, 
-								transitions={@TransitionSpec(event="A",params={@Param(name="toState",value="state2")}),
-							 				@TransitionSpec(event="B",params={@Param(name="toState",value="state3")})}			
-									),
-						   @StateSpec(name="state2",
-								transitions={@TransitionSpec(event="A", params={@Param(name="toState",value="state3")}),
-								 			@TransitionSpec(isDefaultTransition=true, params={@Param(name="toState", value="state2")})
-											}
-								 	),
-						   @StateSpec(name="state3", isFinal=true,
-								transitions={@TransitionSpec(event="A",params={@Param(name="toState",value="state1")}),
-											@TransitionSpec(event="B",params={@Param(name="toState",value="state1")}),
-											@TransitionSpec(event="C",params={@Param(name="toState",value="state2")})
-											}
-									)
-							}
-					)
-							
-			}
-		)
+@StateMachines({
+    @StateMachineSpec(name = "MyStateMachine", type=BASIC,
+            eventTypeClass = TestEnum.class,
+            states = {
+                @StateSpec(name = "state1", isFinal = false, isInitial = true,
+                        implClass = TestState.class,
+                        transitions = {
+                            @TransitionSpec(event = "A", params = {
+                                @Param(name = "toState", value = "state2")}),
+                            @TransitionSpec(event = "B", params = {
+                                @Param(name = "toState", value = "state3")})}
+                ),
+                @StateSpec(name = "state2",implClass = TestState.class,
+                        transitions = {
+                            @TransitionSpec(event = "A", params = {
+                                @Param(name = "toState", value = "state3")}),
+                            @TransitionSpec(isDefaultTransition = true, params = {
+                                @Param(name = "toState", value = "state2")})
+                        }
+                ),
+                @StateSpec(name = "state3", isFinal = true,implClass = TestState.class,
+                        transitions = {
+                            @TransitionSpec(event = "A", params = {
+                                @Param(name = "toState", value = "state1")}),
+                            @TransitionSpec(event = "B", params = {
+                                @Param(name = "toState", value = "state1")}),
+                            @TransitionSpec(event = "C", params = {
+                                @Param(name = "toState", value = "state2")})
+                        }
+                )
+            }
+    )
+
+}
+)
 public class AnnotatedStateMachinesFactoryClass extends
-		AnnotatedStateMachinesFactory {
+        AnnotatedStateMachinesFactory {
 
 }

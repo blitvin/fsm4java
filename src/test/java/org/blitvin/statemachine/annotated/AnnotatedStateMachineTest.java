@@ -18,7 +18,7 @@
 package org.blitvin.statemachine.annotated;
 
 import org.blitvin.statemachine.BadStateMachineSpecification;
-import org.blitvin.statemachine.InvalidEventType;
+import org.blitvin.statemachine.InvalidEventException;
 import org.blitvin.statemachine.StateMachine;
 import org.blitvin.statemachine.concurrent.TestEnum;
 import org.blitvin.statemachine.concurrent.TestEvent;
@@ -28,34 +28,32 @@ import static org.junit.Assert.*;
 
 public class AnnotatedStateMachineTest {
 	@Test
-	public void testFieldFSM() throws BadStateMachineSpecification, InvalidEventType{
+	public void testFieldFSM() throws BadStateMachineSpecification, InvalidEventException{
 		ClassWithFSMMember cl = new ClassWithFSMMember(ClassWithFSMMember.NO_AUTODETECTION);
 		
 		runTestOnFSM(cl.machine);
 	}
 	
 	@Test
-	public void testAutodetectionFSM()throws BadStateMachineSpecification, InvalidEventType{
+	public void testAutodetectionFSM()throws BadStateMachineSpecification, InvalidEventException{
 		ClassWithFSMMember cl = new ClassWithFSMMember(ClassWithFSMMember.AUTODETCTION_SUCCESSFUL);
 		
 		runTestOnFSM(cl.machine);
 	}
 	@Test
-	public void testClassFSM() throws BadStateMachineSpecification, InvalidEventType{
-		TestAnnotatedSubclass<TestEnum> machine = new TestAnnotatedSubclass<>(TestEnum.class);
-		machine.completeInitialization(null);
-		
+	public void testClassFSM() throws BadStateMachineSpecification, InvalidEventException{
+		TestAnnotatedSubclass<TestEnum> machine = new TestAnnotatedSubclass<>();
 		runTestOnFSM(machine);
 	}
 	
 	@Test(expected=BadStateMachineSpecification.class)
-	public void testAutodetectionFail() throws BadStateMachineSpecification, InvalidEventType{
+	public void testAutodetectionFail() throws BadStateMachineSpecification, InvalidEventException{
 		ClassWithFSMMember cl = new ClassWithFSMMember(ClassWithFSMMember.AUTODETECTION_FAIL);
 	}
 	
 	@SuppressWarnings("unchecked")
 	@Test
-	public void testAnnotatedFactory() throws BadStateMachineSpecification, InvalidEventType{
+	public void testAnnotatedFactory() throws BadStateMachineSpecification, InvalidEventException{
 		AnnotatedStateMachinesFactoryClass factory = new AnnotatedStateMachinesFactoryClass();
 		StateMachine<TestEnum> machine = (StateMachine<TestEnum>)factory.getStateMachine("MyStateMachine");
 		assertNotNull(machine);
@@ -63,29 +61,28 @@ public class AnnotatedStateMachineTest {
 	}
 	
 	@Test
-	public void testAnnotatedSubclass() throws BadStateMachineSpecification, InvalidEventType{
-		TestAnnotatedSubclass<TestEnum> cl = new TestAnnotatedSubclass<>(TestEnum.class);
+	public void testAnnotatedSubclass() throws BadStateMachineSpecification, InvalidEventException{
+		TestAnnotatedSubclass<TestEnum> cl = new TestAnnotatedSubclass<>();
 		runTestOnFSM(cl);
 	}
 	
-	private void runTestOnFSM(StateMachine<TestEnum> machine) throws InvalidEventType {
+	private void runTestOnFSM(StateMachine<TestEnum> machine) throws InvalidEventException {
 		TestEvent<TestEnum> te = new TestEvent<TestEnum>(TestEnum.A);
 		
-		assertEquals("state1",machine.getCurrentState().getStateName());
+		assertEquals("state1",machine.getNameOfCurrentState());
 		machine.transit(te);
-		assertEquals("state2",machine.getCurrentState().getStateName());
+		assertEquals("state2",machine.getNameOfCurrentState());
 		machine.transit(te.setEvent(TestEnum.C));
-		assertEquals("state2",machine.getCurrentState().getStateName());
+		assertEquals("state2",machine.getNameOfCurrentState());
 		machine.transit(te.setEvent(TestEnum.A));
-		assertEquals("state3",machine.getCurrentState().getStateName());
+		assertEquals("state3",machine.getNameOfCurrentState());
 		machine.transit(te.setEvent(TestEnum.B));
 		try{
 			machine.transit(te.setEvent(TestEnum.C));
 			fail("Expected InvalidEventTypeException");
 		}
-		catch(InvalidEventType e){
+		catch(InvalidEventException e){
 			
 		}
 	}
 }
-

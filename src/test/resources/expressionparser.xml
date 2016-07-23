@@ -1,73 +1,72 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <stateMachines>
-	<stateMachine name="tokenizerFSM" eventTypeClass="org.blitvin.statemachine.expressionparser.TokensEnum" 
-				  class="org.blitvin.statemachine.expressionparser.TokenizerFSM">
-		<state name="RegularState" isInitial="true" isFinal="true" class="org.blitvin.statemachine.expressionparser.RegularState">
-			<transition event="CLOSING_BRACKET" toState="MinusIsToken"/>
-			<transition event="DIGIT" toState="DigitState"/>
-			<transition event="OTHER" toState="ErrorState"/>
-			<transition event="MINUS" toState="MinusState"/>
-			<other_events_transition toState="RegularState"/>
- 		</state>
- 		<state name="MinusState" isFinal="false" class="org.blitvin.statemachine.expressionparser.MinusState">
- 			<transition event="DIGIT" toState="DigitState"/>
- 			<transition event="OTHER" toState="ErrorState"/>
- 			<transition event="MINUS" toState="MinusState"/>
- 			<other_events_transition toState="RegularState"/>
- 		</state>
- 		<state name="MinusIsToken" isFinal="true" class="org.blitvin.statemachine.expressionparser.RegularState">
- 			<transition event="DIGIT" toState="DigitState"/>
- 			<transition event="OTHER" toState="ErrorState"/>
- 			<transition event="CLOSING_BRACKET" toState="MinusIsToken"/>
- 			<other_events_transition toState="RegularState"/>
- 		</state>
- 		<state name="DigitState" isFinal="true" class="org.blitvin.statemachine.expressionparser.DigitState">
- 			<transition event="DIGIT" toState="DigitState"/>
- 			<transition event="OTHER" toState="ErrorState"/>
- 			<other_events_transition toState="MinusIsToken"/>
-  		</state>
- 		<state name="ErrorState" isFinal="true" class="org.blitvin.statemachine.expressionparser.ErrorState">
- 			<other_events_transition toState=""/>
- 		</state>
-	</stateMachine>
-	<stateMachine name="expressionTreeFSM" eventTypeClass="org.blitvin.statemachine.expressionparser.SyntaxTokensEnum"
-				class="org.blitvin.statemachine.expressionparser.ExpressionTreeFSM">
-		<state name="startOfExpression" isInitial="true" isFinal="false" class="org.blitvin.statemachine.expressionparser.StartingExpression">
-			<transition event="LITERAL" toState="startOfFactor"/>
-			<transition event="OPEN_BRACKET" toState="startOfFactor"/>
-			<other_events_transition toState="error"/>
-		</state>
-		<state name="startOfFactor" isFinal="false" class="org.blitvin.statemachine.expressionparser.StartingFactor">
-			<transition event="LITERAL" toState="factor"/>
-			<transition event="OPEN_BRACKET" toState="startOfExpression"/>
-			<other_events_transition toState="error"/>
-		</state>
-		<state name="multOrDiv" isFinal="false" class="org.blitvin.statemachine.expressionparser.MultDivState">
-			<transition event="LITERAL" toState="factor"/>
-			<transition event="OPEN_BRACKET" toState="startOfExpression"/>
-			<other_events_transition toState="error"/>
-		</state>
-		<state name="factor" isFinal="false" class="org.blitvin.statemachine.expressionparser.Factor">
-			<transition event="MULTIPLY_DIVIDE" toState="multOrDiv"/>
-			<transition event="ADD_SUBSTRACT" toState="expression"/>
-			<transition event="CLOSING_BRACKET" toState="expression"/>
-			<transition event="END_OF_INPUT" toState="expression"/>
-			<other_events_transition toState="error"/>
-		</state>
-		<state name="addOrSubst" isFinal="false" class="org.blitvin.statemachine.expressionparser.AddSubstState">
-			<transition event="LITERAL" toState="startOfFactor"/>
-			<transition event="OPEN_BRACKET" toState="startOfFactor"/>
-			<other_events_transition toState="error"/>
-		</state>
-		<state name="expression" isFinal="true" class="org.blitvin.statemachine.expressionparser.Expression">
-			<transition event="LITERAL" toState="startOfFactor"/>
-			<transition event="OPEN_BRACKET" toState="startOfFactor"/>
-			<transition event="CLOSING_BRACKET" toState="factor"/>
-			<transition event="ADD_SUBSTRACT" toState="addOrSubst"/>
-			<other_events_transition toState="error"/>
-		</state>
-		<state name="error" isFinal="true" class="org.blitvin.statemachine.expressionparser.SyntaxError">
-			<other_events_transition toState=""/>
-		</state>
-	</stateMachine>
+    <stateMachine name="tokenizerFSM" eventTypeClass="org.blitvin.statemachine.expressionparser.TokensEnum" type="SIMPLE">
+        <state name="RegularState" isInitial="true" isFinal="true">
+            <transition event="CLOSING_BRACKET" toState="MinusIsToken"/>
+            <transition event="DIGIT" toState="DigitState"/>
+            <transition event="OTHER" toState="ErrorState"/>
+            <transition event="MINUS" toState="MinusState"/>
+            <other_events_transition toState="RegularState"/>
+        </state>
+        <state name="MinusState" isFinal="false">
+            <transition event="DIGIT" toState="DigitState"/>
+            <transition event="OTHER" toState="ErrorState"/>
+            <transition event="MINUS" toState="MinusState"/>
+            <other_events_transition toState="RegularState"/>
+        </state>
+        <state name="MinusIsToken" isFinal="true">
+            <transition event="DIGIT" toState="DigitState"/>
+            <transition event="OTHER" toState="ErrorState"/>
+            <transition event="CLOSING_BRACKET" toState="MinusIsToken"/>
+            <other_events_transition toState="RegularState"/>
+        </state>
+        <state name="DigitState" isFinal="true">
+            <transition event="DIGIT" toState="DigitState"/>
+            <transition event="OTHER" toState="ErrorState"/>
+            <other_events_transition toState="MinusIsToken"/>
+        </state>
+        <state name="ErrorState" isFinal="true">
+            <other_events_transition type="NULL"/>
+        </state>
+    </stateMachine>
+    <stateMachine name="syntaxFSM" eventTypeClass="org.blitvin.statemachine.expressionparser.SyntaxTokensEnum"
+                      type="SIMPLE">
+        <state name="startOfExpression" isInitial="true" isFinal="false">
+            <transition event="LITERAL" toState="startOfFactor"/>
+            <transition event="OPEN_BRACKET" toState="startOfFactor"/>
+            <other_events_transition toState="error"/>
+        </state>
+        <state name="startOfFactor" isFinal="false">
+            <transition event="LITERAL" toState="factor"/>
+            <transition event="OPEN_BRACKET" toState="startOfExpression"/>
+            <other_events_transition toState="error"/>
+        </state>
+        <state name="multOrDiv" isFinal="false">
+            <transition event="LITERAL" toState="factor"/>
+            <transition event="OPEN_BRACKET" toState="startOfExpression"/>
+            <other_events_transition toState="error"/>
+        </state>
+        <state name="factor" isFinal="false">
+            <transition event="MULTIPLY_DIVIDE" toState="multOrDiv"/>
+            <transition event="ADD_SUBSTRACT" toState="expression"/>
+            <transition event="CLOSING_BRACKET" toState="expression"/>
+            <transition event="END_OF_INPUT" toState="expression"/>
+            <other_events_transition toState="error"/>
+        </state>
+        <state name="addOrSubst" isFinal="false">
+            <transition event="LITERAL" toState="startOfFactor"/>
+            <transition event="OPEN_BRACKET" toState="startOfFactor"/>
+            <other_events_transition toState="error"/>
+        </state>
+        <state name="expression" isFinal="true">
+            <transition event="LITERAL" toState="startOfFactor"/>
+            <transition event="OPEN_BRACKET" toState="startOfFactor"/>
+            <transition event="CLOSING_BRACKET" toState="factor"/>
+            <transition event="ADD_SUBSTRACT" toState="addOrSubst"/>
+            <other_events_transition toState="error"/>
+        </state>
+        <state name="error" isFinal="true">
+            <other_events_transition type="NULL"/>
+        </state>
+    </stateMachine>
 </stateMachines>
