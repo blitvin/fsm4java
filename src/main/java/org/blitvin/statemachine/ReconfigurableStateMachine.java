@@ -98,12 +98,19 @@ public class ReconfigurableStateMachine<EventType extends Enum<EventType>>
                 if (builder != null) {
 
                     try {
-                        ((FSMWrapper) machine).replaceWrappedWith(builder.build(
-                                new ProvidedOrCopyFromFSMFactory(newStates, (StateMachine) wrapped), true));
+                        StateMachineDriver<EventType> wrappedFSM = (StateMachineDriver<EventType>)wrapped;
+                        StateMachineDriver<EventType> newFSM = (StateMachineDriver<EventType>) builder.build(
+                                new ProvidedOrCopyFromFSMFactory(newStates, wrappedFSM), true);
+                        newFSM.setCurrentNode(wrappedFSM.getNameOfCurrentState());
+                        for(Object name:wrappedFSM.getFSMProperties().keySet()){
+                            newFSM.setProperty(name, wrappedFSM.getProperty(name));
+                        }
+                        ((FSMWrapper) machine).replaceWrappedWith(newFSM);
                     } catch (BadStateMachineSpecification ex) {
                         this.ex = ex;
+                    } finally {
+                        latch.countDown();
                     }
-                    latch.countDown();
                 } else {
                     try {
                         if (newStates != null) {

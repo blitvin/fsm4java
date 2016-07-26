@@ -44,12 +44,23 @@ class BasicStateMachine<EventType extends Enum<EventType>> implements StateMachi
     }
 
     @Override
-    public void setCurrentNode(FSMNode<EventType> node) {
+    public boolean setCurrentNode(FSMNode<EventType> node) {
         if (nodes.containsValue(node)) {
             current = node;
+            return true;
         }
+        return false;
     }
 
+    @Override
+    public boolean setCurrentNode(String nodeName){
+        FSMNode<EventType> newCurrentNode = nodes.get(nodeName);
+        if (newCurrentNode != null) {
+            current = newCurrentNode;
+            return true;
+        }
+        return false;
+    }
     @Override
     public FSMNode<EventType> getNodeByName(String name) {
         return nodes.get(name);
@@ -102,16 +113,23 @@ class BasicStateMachine<EventType extends Enum<EventType>> implements StateMachi
         return nodes.get(stateName).getState();
     }
 
+    private void notifySubscribers(ArrayList<PropertyChangeListener> subscribers,
+            Object name, Object prev, Object value){
+        if (subscribers != null){
+           for (PropertyChangeListener cur : subscribers) {
+                    cur.onPropertyChange(name, prev, value);
+                }
+        }
+    }
+
     @Override
     public boolean setProperty(Object name, Object value) {
         Object prev = properties.put(name, value);
         if (initialized) {
-            ArrayList<PropertyChangeListener> subscribers = propertyChangeListeners.get(name);
-            if (subscribers != null) {
-                for (PropertyChangeListener cur : subscribers) {
-                    cur.onPropertyChange(name, prev, value);
-                }
-            }
+            // notify subscibers for specific object
+            notifySubscribers(propertyChangeListeners.get(name), name, prev, value);
+            // notify catch-all subscribers
+            notifySubscribers(propertyChangeListeners.get(null), name, prev, value);
         }
         return true;
     }

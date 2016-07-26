@@ -9,8 +9,11 @@ import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
 @RunWith(Suite.class)
-@SuiteClasses({ DomFactoryTest.class, StateMachineBuilderTest.class, AnnotatedStateMachineTest.class,
-				ThreadSafeMachineTest.class, ExpressionParserNegativeTest.class, ExpressionParserPositiveTest.class })
+@SuiteClasses({DomFactoryTest.class, StateMachineBuilderTest.class,
+    AnnotatedStateMachineTest.class, ThreadSafeMachineTest.class,
+    ExpressionParserNegativeTest.class, ExpressionParserPositiveTest.class,
+    ReconfigurableFSMTest.class})
 public class StateMachineTests {
 
 }
+

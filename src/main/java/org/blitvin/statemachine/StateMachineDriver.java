@@ -27,7 +27,8 @@ import java.util.Map;
  * @author blitvin
  */
 interface StateMachineDriver<EventType extends Enum<EventType>> extends StateMachine<EventType>, FSMStateView<EventType>{
-    void setCurrentNode(FSMNode<EventType> node);
+    boolean setCurrentNode(FSMNode<EventType> node);
+    boolean setCurrentNode(String nodeName);
     /**
      * Because the FSM states and transitions may reference other states initialization is
      * performed in two stages - constructor creates all objects (states and transitions) and
