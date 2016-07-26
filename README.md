@@ -25,13 +25,13 @@ Those are not tests per se, but stand alone apps measuring performance in differ
 
 
 Please look into documentation directory of the repository to get more info:
-[Using FSM4Java in your projects](../blob/master/docs/api.md) in your project
+[Using FSM4Java in your projects](../master/docs/api.md) in your project
 
-[Creating FSM](../blob/master/docs/creating_fsm.md)
+[Creating FSM](../master/docs/creating_fsm.md)
 
-[ConcurrentFSMs](../blob/master/docs/concurrent_fsms.md)
+[ConcurrentFSMs](../master/docs/concurrent_fsms.md)
 
-[Extending FSM with wrappers](../blob/master/docs/wrapper.md)
+[Extending FSM with wrappers](../master/docs/wrapper.md)
 
-[Complete example](../blob/master/docs/expression.md) expression parser using state machine
+[Complete example](../master/docs/expression.md) expression parser using state machine
 
