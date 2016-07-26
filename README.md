@@ -34,3 +34,4 @@ Please look into documentation directory of the repository to get more info:
 [Extending FSM with wrappers](../blob/master/docs/wrapper.md)
 
 [Complete example](../blob/master/docs/expression.md) expression parser using state machine
+
