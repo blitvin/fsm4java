@@ -45,7 +45,11 @@ public class StateSkeleton<EventType extends Enum<EventType>> implements State<E
     }
 
     @Override
-    public void onStateMachineInitialized(Map<?, ?> initializer, FSMStateView containingMachine) throws BadStateMachineSpecification {
+    public void onStateAttachedToFSM(Map<?, ?> initializer, FSMStateView containingMachine) throws BadStateMachineSpecification {
+    }
+
+    @Override
+    public void onStateDetachedFromFSM() {
     }
     
 }

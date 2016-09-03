@@ -22,6 +22,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Set;
 
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
@@ -70,19 +71,7 @@ public class DOMStateMachineFactory extends	StateMachineFactory {
 	public static final String DEFAULT_XML_FILE="empty.xml";
 	public static final String DEFAULT_XML_FILE_PROPERTY = "org.blitvin.statemachine.DOMStateMachineFactoryImplementation.defaultXmlFileName";
 	
-	/**
-	 * Class used for construction of state if class name is not specified explicitely
-	 */
-	//public static final String DEFAULT_STATE_CLASS="org.blitvin.statemachine.State";
-	/**
-	 * name of default class used for transitions of the state machine 
-	 */
-	//public static final String DEFAULT_TRANSITION_CLASS="org.blitvin.statemachine.SimpleTransition";
-	/**
-	 * name of state machine default class
-	 */
-	//public static final String DEFAULT_STATE_MACHINE_CLASS = "org.blitvin.statemachine.SimpleStateMachine";
-	
+
 
 	protected static final Class<?>[] VALUE_OF_PARAMS = {String.class};
 	/* list of parsed state machine specifications */
@@ -329,6 +318,13 @@ public class DOMStateMachineFactory extends	StateMachineFactory {
         }
                         
         return builder;
+    }
+
+    @Override
+    public Set<String> getNamesOfProvidedFSMs() {
+        HashSet<String> retVal = new HashSet<>(stateMachineSpecs.keySet());
+        retVal.addAll(wrapperSpecs.keySet());
+        return retVal;
     }
 
    

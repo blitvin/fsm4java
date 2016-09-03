@@ -18,6 +18,8 @@
 package org.blitvin.statemachine.annotated;
 
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 import org.blitvin.statemachine.BadStateMachineSpecification;
 import org.blitvin.statemachine.StateMachine;
 import org.blitvin.statemachine.StateMachineBuilder;
@@ -117,6 +119,11 @@ public class AnnotatedStateMachinesFactory extends StateMachineFactory {
         } else {
             return AnnotationParser.parse(spec);
         }
+    }
+
+    @Override
+    public Set<String> getNamesOfProvidedFSMs() {
+        return new HashSet<String>(map.keySet());
     }
 
 }

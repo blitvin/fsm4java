@@ -18,7 +18,11 @@
 package org.blitvin.statemachine;
 
 /**
- *
+ * Classes extending functionality of FSM should implement this interface.
+ * Examples of such functionality augmenting is ReconfigurableStateMachine
+ * allowing reconfiguration of FSM in runtime, ConcurrentStateMachine adding
+ * thread safety and multi-threading capabilities etc.
+ * see documentation in FSM4Java github site for more information e.g. wrapper.md
  * @author blitvin
  * @param <EventType>
  */

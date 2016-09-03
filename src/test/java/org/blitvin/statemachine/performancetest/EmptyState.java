@@ -15,9 +15,8 @@ import org.blitvin.statemachine.StateMachineEvent;
  *
  * @author blitvin
  */
-public class EmptyState implements State<PerformanceEnum>{
+public class EmptyState implements State<PerformanceEnum> {
 
-    
     @Override
     public void onStateBecomesCurrent(StateMachineEvent<PerformanceEnum> theEvent, State<PerformanceEnum> prevState) {
     }
@@ -31,7 +30,11 @@ public class EmptyState implements State<PerformanceEnum>{
     }
 
     @Override
-    public void onStateMachineInitialized(Map<?, ?> initializer, FSMStateView containingMachine) throws BadStateMachineSpecification {
+    public void onStateAttachedToFSM(Map<?, ?> initializer, FSMStateView containingMachine) throws BadStateMachineSpecification {
     }
-    
+
+    @Override
+    public void onStateDetachedFromFSM() {
+    }
+
 }

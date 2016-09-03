@@ -23,8 +23,9 @@ import java.util.EnumMap;
 import java.util.HashMap;
 
 /**
- * This is a main way to obtain FSM object. 
- * Factories internally use this class to  construct FSM
+ * This is a main way to obtain FSM object. Factories internally use this class
+ * to construct FSM
+ *
  * @author blitvin
  * @param <EventType>
  */
@@ -92,15 +93,10 @@ public class StateMachineBuilder<EventType extends Enum<EventType>> {
         NONE, EVENT, DEFAULT;
     }
 
-    //private FSMNodeFactory<EventType> fsmNodeFactory;
-    //private FSMStateFactory<EventType> fsmStateFactory;
     private int defaultProperties;
-    // private EnumMap<EventType,Transition<EventType>> curTransitions;
-    //private Transition<EventType> curDefaultTransition;
     private Transition<EventType> curTransition;
     private HashMap<Object, Object> curAttributes;
     private HashMap<Object, HashMap<Object, Object>> attributes;
-    // private Object attributeObject;
     private HashMap<String, FSMNode<EventType>> nodes;
     private String curStateName = null;
     private FSMNode<EventType> curNode;
@@ -120,8 +116,8 @@ public class StateMachineBuilder<EventType extends Enum<EventType>> {
 
     public static final String STATE_FACTORY_IN_GLOBAL_PROPERTIES = "globalFactory";
 
-    public static final String ASPECTS_PROPERTY="aspects";
-    
+    public static final String ASPECTS_PROPERTY = "aspects";
+
     public StateMachineBuilder(FSM_TYPES type, Class eventTypeClass) throws BadStateMachineSpecification {
         if (!eventTypeClass.isEnum()) {
             throw new BadStateMachineSpecification("provided class is not an enum");
@@ -205,13 +201,13 @@ public class StateMachineBuilder<EventType extends Enum<EventType>> {
         return this;
     }
 
-    public StateMachineBuilder<EventType> specifyStateObject(State<EventType> state){
+    public StateMachineBuilder<EventType> specifyStateObject(State<EventType> state) {
         curNode.setState(state);
         return this;
     }
-    
+
     public StateMachineBuilder<EventType> revisitState(String name) throws BadStateMachineSpecification {
-       if (curNode == null) {
+        if (curNode == null) {
             attributes.put(null, curAttributes);// attributes of FSM itself
             curAttributes = new HashMap<>();
         } else {
@@ -221,12 +217,12 @@ public class StateMachineBuilder<EventType extends Enum<EventType>> {
         curTransition = null;
         curNode = nodes.get(name);
         if (curNode == null) {
-            throw new BadStateMachineSpecification("revisit unable to find state "+name);
+            throw new BadStateMachineSpecification("revisit unable to find state " + name);
         }
         curAttributes = attributes.get(curNode);
         return this;
     }
-    
+
     public StateMachineBuilder<EventType> addTransition(EventType event) throws BadStateMachineSpecification {
         return addTransition(event, TRANSITION_TYPE.BASIC);
     }
@@ -277,17 +273,6 @@ public class StateMachineBuilder<EventType extends Enum<EventType>> {
     public StateMachineBuilder<EventType> addDefaultTransition(String transitionTarget) throws BadStateMachineSpecification {
         return addDefaultTransition(TRANSITION_TYPE.BASIC).addProperty(TARGET_STATE, transitionTarget);
     }
-    /*
-     public StateMachineBuilder<EventType> statesFrom(StateMachine<EventType> machine,
-     boolean overrideStates){
-     fsmStateFactory = new CopyStatesFactory(machine,fsmStateFactory,overrideStates);
-     return this;
-     }
-    
-     public StateMachineBuilder<EventType> statesFrom(FSMStateFactory<EventType> factory){
-     fsmStateFactory = factory;
-     return this;
-     }*/
 
     public StateMachineBuilder<EventType> addProperty(Object name, Object value) {
         curAttributes.put(name, value);
@@ -341,7 +326,7 @@ public class StateMachineBuilder<EventType extends Enum<EventType>> {
                 // for now ignore attribute - no way to output warning
             }
         }
-        
+
         //populate state objects
         for (HashMap.Entry<String, FSMNode<EventType>> entry : nodes.entrySet()) {
             FSMNode<EventType> theNode = entry.getValue();
@@ -355,7 +340,7 @@ public class StateMachineBuilder<EventType extends Enum<EventType>> {
             }
 
             // try retreive state from fsm attributes
-            if (theNode.getState() == null|| overrideDefinedStates) {
+            if (theNode.getState() == null || overrideDefinedStates) {
                 if (fsmAttributes.containsKey(stateName + STATE_IN_GLOBAL_PROPERTIES_SUFFIX)) {
                     try {
                         theNode.setState((State) fsmAttributes.get(stateName + STATE_FACTORY_IN_GLOBAL_PROPERTIES));
@@ -399,20 +384,64 @@ public class StateMachineBuilder<EventType extends Enum<EventType>> {
         attributes.get(null).putAll(fsmProperties);
         return this;
     }
-    public StateMachineBuilder<EventType> addFSMProperty(Object name, Object value){
+
+    HashMap<Object, Object> getFSMProperties() {
+        HashMap<Object, Object> retVal = new HashMap<Object, Object>(attributes.size());
+        retVal.putAll(attributes.get(null));
+        return retVal;
+    }
+
+    /**
+     * replaces current set of fsm properties with supplied one - note that
+     * whatever properties are added before call of this method are discarded
+     *
+     * @param fsmProperties
+     */
+    public void setFSMProperties(HashMap<Object, Object> fsmProperties) {
+        attributes.put(null, fsmProperties);
+    }
+
+    public StateMachineBuilder<EventType> addFSMProperty(Object name, Object value) {
         attributes.get(null).put(name, value);
         return this;
     }
+
+    /**
+     * creates FSM with State objects from statesFrom. If both builder and
+     * statesFrom contains objects for particular state which one is used
+     * decided according to overrideDefinedStates
+     *
+     * @param statesFrom - FSM from which State are used to fill newly created
+     * FSM states
+     * @param overrideDefinedStates - if true state objects from stateFrom are
+     * used even if builder contain object for particular state
+     * @return fully formed FSM
+     * @throws BadStateMachineSpecification
+     */
     public StateMachine<EventType> build(StateMachine<EventType> statesFrom, boolean overrideDefinedStates)
             throws BadStateMachineSpecification {
         return buildImpl(new CopyStatesFactory(statesFrom), overrideDefinedStates);
     }
 
+    /**
+     * creates FSM with State objects from factory.If both builder and
+     * statesFrom contains objects for particular state which one is used
+     * decided according to overrideDefinedStates
+     * @param factory State object factory to used for filling State objects of the FSM
+     * @param overrideDefinedStates if true state objects from factory are
+     * used even if builder contain object for particular state
+     * @return fully formed FSM
+     * @throws BadStateMachineSpecification
+     */
     public StateMachine<EventType> build(FSMStateFactory<EventType> factory, boolean overrideDefinedStates)
             throws BadStateMachineSpecification {
         return buildImpl(factory, overrideDefinedStates);
     }
-
+    /**
+     * creates new FSM
+     * @return fully formed FSM
+     * @throws BadStateMachineSpecification 
+     */
     public StateMachine<EventType> build() throws BadStateMachineSpecification {
         return buildImpl(null, true);
     }

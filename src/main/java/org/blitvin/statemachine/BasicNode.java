@@ -42,6 +42,8 @@ class BasicNode<EventType extends Enum<EventType>> implements FSMNode<EventType>
     
     @Override
     public void setState(State<EventType> state){
+        if (this.state != null)
+            this.state.onStateDetachedFromFSM();
         this.state = state;
     }
 
@@ -119,7 +121,7 @@ class BasicNode<EventType extends Enum<EventType>> implements FSMNode<EventType>
        if (defaultTransition != null) {
            defaultTransition.onStateMachineInitialized((Map<?,?>)initializer.get(defaultTransition), containingMachine, state);
        }
-       getState().onStateMachineInitialized((Map<?,?>)initializer.get(this),containingMachine);
+       getState().onStateAttachedToFSM((Map<?,?>)initializer.get(this),containingMachine);
     }
 
     

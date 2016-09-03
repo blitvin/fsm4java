@@ -60,7 +60,7 @@ public class ReconfigurableFSMTest {
         }
 
         @Override
-        public void onStateMachineInitialized(Map<?, ?> initializer, FSMStateView containingMachine) throws BadStateMachineSpecification {
+        public void onStateAttachedToFSM(Map<?, ?> initializer, FSMStateView containingMachine) throws BadStateMachineSpecification {
             fsm = containingMachine;
             fsm.registerPropertyChangeListener(new TestPropertyListener(this), FIRST);
         }

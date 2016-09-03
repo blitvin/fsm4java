@@ -24,7 +24,8 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 /**
- *
+ * BasicStateMachine implements basic fsm operations like transitions, work with
+ * FSM properties etc.
  * @author blitvin
  * @param <EventType>
  */
@@ -168,6 +169,11 @@ class BasicStateMachine<EventType extends Enum<EventType>> implements StateMachi
     @Override
     public HashMap<Object, Object> getFSMProperties() {
         return properties;
+    }
+
+    @Override
+    public void deregisterPropertyChangeListener(PropertyChangeListener listener, Object propertyName) {
+        propertyChangeListeners.get(propertyName).remove(listener);
     }
 
 }

@@ -41,6 +41,18 @@ public interface AsyncStateMachine<EventType extends Enum<EventType>> extends St
     StampedState<EventType> CAStransit(StateMachineEvent<EventType> event, int generation) throws InvalidEventException;
 
     /**
+     * send event to the state and pause until processing is completed. Return
+     * StampedState object representing new state of the machine
+     * This method is logically equivalent to CAStransit(event,0);
+     * @param event event to process
+     * @return pair of timestamp and state after transition triggered by the
+     * event
+     * @throws InvalidEventException thrown if there is no valid transition
+     * exists for current state and particular event type of the event
+     */
+    public StampedState<EventType> transitAndGetResultingState(StateMachineEvent<EventType> event)
+            throws InvalidEventException;
+    /**
      * send event to FSM and get Future object for obtaining result when available
      * @param event event to process
      * @return Future returning state when event is processed
@@ -53,9 +65,6 @@ public interface AsyncStateMachine<EventType extends Enum<EventType>> extends St
      * @return true if event accepted for processing e.g. there is no problem with room to accommodate it
      */
     boolean fireAndForgetTransit(StateMachineEvent<EventType> event);
-
-    void start();
-    void shutDown();
     
     StampedState<EventType> getCurrentStampedState();
 }

@@ -28,11 +28,12 @@ import org.blitvin.statemachine.State;
 import org.blitvin.statemachine.StateMachineEvent;
 
 /**
- * This factory provides capability for constructing business logic objects
- * for FSM from annotated object. Methods of the object provided to constructor
- * according to annotation. The annotation specifies on which state and which callback
- * the method should be invoked. Note that all the methods are called ON THE SAME
- * OBJECT, the object is shared by handlers of all states
+ * This factory provides capability for constructing business logic objects for
+ * FSM from annotated object. Methods of the object provided to constructor
+ * according to annotation. The annotation specifies on which state and which
+ * callback the method should be invoked. Note that all the methods are called
+ * ON THE SAME OBJECT, the object is shared by handlers of all states
+ *
  * @author blitvin
  * @param <EventType>
  */
@@ -45,7 +46,8 @@ public class AnnotatedObjectStateFactory<EventType extends Enum<EventType>> impl
     private static final int ON_STATE_IS_NO_LONGER_CURRENT = 1;
     private static final int ON_INVALID_TRANSITION = 2;
     private static final int ON_STATE_MACHINE_INITITALIZED = 3;
-    private static final int CALLBACKS = 4;
+    private static final int ON_STATE_DETACHED_FROM_FSM = 4;
+    private static final int CALLBACKS = 5;
 
     private static class WrappedAnnotatedState<EventType extends Enum<EventType>> implements State<EventType> {
 
@@ -62,14 +64,14 @@ public class AnnotatedObjectStateFactory<EventType extends Enum<EventType>> impl
             if (callbacks[ON_STATE_BECOMES_CURRENT] != null) {
                 try {
                     callbacks[ON_STATE_BECOMES_CURRENT].invoke(obj, theEvent, prevState);
-                } catch (IllegalAccessException | IllegalArgumentException  ex) {
+                } catch (IllegalAccessException | IllegalArgumentException ex) {
                     throw new RuntimeException(ex);
-                }
-                catch( InvocationTargetException ex) {
-                 if( ex.getCause() instanceof RuntimeException)
-                     throw (RuntimeException)ex.getCause();
-                 else 
-                     throw new RuntimeException(ex);
+                } catch (InvocationTargetException ex) {
+                    if (ex.getCause() instanceof RuntimeException) {
+                        throw (RuntimeException) ex.getCause();
+                    } else {
+                        throw new RuntimeException(ex);
+                    }
                 }
             }
         }
@@ -81,11 +83,12 @@ public class AnnotatedObjectStateFactory<EventType extends Enum<EventType>> impl
                     callbacks[ON_STATE_IS_NO_LONGER_CURRENT].invoke(obj, theEvent, nextState);
                 } catch (IllegalAccessException | IllegalArgumentException ex) {
                     throw new RuntimeException(ex);
-                } catch( InvocationTargetException ex) {
-                 if( ex.getCause() instanceof RuntimeException)
-                     throw (RuntimeException)ex.getCause();
-                 else 
-                     throw new RuntimeException(ex);
+                } catch (InvocationTargetException ex) {
+                    if (ex.getCause() instanceof RuntimeException) {
+                        throw (RuntimeException) ex.getCause();
+                    } else {
+                        throw new RuntimeException(ex);
+                    }
                 }
             }
         }
@@ -97,27 +100,46 @@ public class AnnotatedObjectStateFactory<EventType extends Enum<EventType>> impl
                     callbacks[ON_INVALID_TRANSITION].invoke(obj, theEvent);
                 } catch (IllegalAccessException | IllegalArgumentException ex) {
                     throw new RuntimeException(ex);
-                } catch( InvocationTargetException ex) {
-                 if( ex.getCause() instanceof RuntimeException)
-                     throw (RuntimeException)ex.getCause();
-                 else 
-                     throw new RuntimeException(ex);
+                } catch (InvocationTargetException ex) {
+                    if (ex.getCause() instanceof RuntimeException) {
+                        throw (RuntimeException) ex.getCause();
+                    } else {
+                        throw new RuntimeException(ex);
+                    }
                 }
             }
         }
 
         @Override
-        public void onStateMachineInitialized(Map<?, ?> initializer, FSMStateView containingMachine) throws BadStateMachineSpecification {
+        public void onStateAttachedToFSM(Map<?, ?> initializer, FSMStateView containingMachine) throws BadStateMachineSpecification {
             if (callbacks[ON_STATE_MACHINE_INITITALIZED] != null) {
                 try {
                     callbacks[ON_STATE_MACHINE_INITITALIZED].invoke(obj, initializer, containingMachine);
                 } catch (IllegalAccessException | IllegalArgumentException ex) {
                     throw new RuntimeException(ex);
-                } catch( InvocationTargetException ex) {
-                 if( ex.getCause() instanceof RuntimeException)
-                     throw (RuntimeException)ex.getCause();
-                 else 
-                     throw new RuntimeException(ex);
+                } catch (InvocationTargetException ex) {
+                    if (ex.getCause() instanceof RuntimeException) {
+                        throw (RuntimeException) ex.getCause();
+                    } else {
+                        throw new RuntimeException(ex);
+                    }
+                }
+            }
+        }
+
+        @Override
+        public void onStateDetachedFromFSM() {
+            if (callbacks[ON_STATE_DETACHED_FROM_FSM] != null) {
+                try {
+                    callbacks[ON_STATE_DETACHED_FROM_FSM].invoke(obj);
+                } catch (IllegalAccessException | IllegalArgumentException ex) {
+                    throw new RuntimeException(ex);
+                } catch (InvocationTargetException ex) {
+                    if (ex.getCause() instanceof RuntimeException) {
+                        throw (RuntimeException) ex.getCause();
+                    } else {
+                        throw new RuntimeException(ex);
+                    }
                 }
             }
         }
@@ -155,25 +177,30 @@ public class AnnotatedObjectStateFactory<EventType extends Enum<EventType>> impl
                 callbacks(noLongerCurrentAn.fsm(), noLongerCurrentAn.state())[ON_STATE_IS_NO_LONGER_CURRENT] = m;
                 continue;
             }
-            onInvalidTransition invalidTransiitonAn = m.getAnnotation(onInvalidTransition.class);
-            if (invalidTransiitonAn != null && (m.getParameterCount() == 1) 
+            onInvalidTransition invalidTransitionAn = m.getAnnotation(onInvalidTransition.class);
+            if (invalidTransitionAn != null && (m.getParameterCount() == 1)
                     && m.getParameterTypes()[0].equals(StateMachineEvent.class)) {
-                callbacks(invalidTransiitonAn.fsm(),invalidTransiitonAn.state())[ON_INVALID_TRANSITION] = m;
+                callbacks(invalidTransitionAn.fsm(), invalidTransitionAn.state())[ON_INVALID_TRANSITION] = m;
                 continue;
             }
             onStateMachineInitialized fsmInitializedAn = m.getAnnotation(onStateMachineInitialized.class);
-            if (fsmInitializedAn != null &&(m.getParameterCount() == 2)
+            if (fsmInitializedAn != null && (m.getParameterCount() == 2)
                     && m.getParameterTypes()[0].equals(Map.class)
                     && m.getParameterTypes()[1].equals(FSMStateView.class)) {
                 callbacks(fsmInitializedAn.fsm(), fsmInitializedAn.state())[ON_STATE_MACHINE_INITITALIZED] = m;
             }
+            onStateDetachedFromFSM fsmDetachedAn = m.getAnnotation(onStateDetachedFromFSM.class);
+            if (fsmDetachedAn != null && m.getParameterCount() == 0) {
+                callbacks(fsmDetachedAn.fsm(), fsmDetachedAn.state())[ON_STATE_DETACHED_FROM_FSM] = m;
+            }
         }
     }
-    public AnnotatedObjectStateFactory(Object annotated,String fsm){
+
+    public AnnotatedObjectStateFactory(Object annotated, String fsm) {
         this(annotated);
         this.fsm = fsm;
     }
-    
+
     public AnnotatedObjectStateFactory specifyFSMName(String fsm) {
         this.fsm = fsm;
         return this;
@@ -181,7 +208,7 @@ public class AnnotatedObjectStateFactory<EventType extends Enum<EventType>> impl
 
     @Override
     public State<EventType> get(String state, HashMap<Object, Object> initializers) {
-        return new WrappedAnnotatedState<>(annotated,callbacks(fsm, state)); // TBD should it cache states?
+        return new WrappedAnnotatedState<>(annotated, callbacks(fsm, state)); // TBD should it cache states?
     }
 
 }

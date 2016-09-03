@@ -15,14 +15,15 @@ import org.blitvin.statemachine.StateMachineEvent;
  *
  * @author blitvin
  */
-public class MarkState implements State<PerformanceEnum>{
+public class MarkState implements State<PerformanceEnum> {
 
-    private FSMStateView fsm=null;
+    private FSMStateView fsm = null;
     public String propertyName;
-    
-    public MarkState(String propertyName){
+
+    public MarkState(String propertyName) {
         this.propertyName = propertyName;
     }
+
     @Override
     public void onStateBecomesCurrent(StateMachineEvent<PerformanceEnum> theEvent, State<PerformanceEnum> prevState) {
         fsm.setProperty(propertyName, System.currentTimeMillis());
@@ -37,8 +38,12 @@ public class MarkState implements State<PerformanceEnum>{
     }
 
     @Override
-    public void onStateMachineInitialized(Map<?, ?> initializer, FSMStateView containingMachine) throws BadStateMachineSpecification {
+    public void onStateAttachedToFSM(Map<?, ?> initializer, FSMStateView containingMachine) throws BadStateMachineSpecification {
         fsm = containingMachine;
     }
-    
+
+    @Override
+    public void onStateDetachedFromFSM() {
+    }
+
 }

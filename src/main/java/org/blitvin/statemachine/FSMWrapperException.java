@@ -18,7 +18,9 @@
 package org.blitvin.statemachine;
 
 /**
- *
+ * FSMWrapperException is thrown if there is a problem during calling aply method
+ * of the wrapper or accept method of underlying FSM ( may be actual FSM or another
+ * wrapper)
  * @author blitvin
  */
 public class FSMWrapperException extends Exception {

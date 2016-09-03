@@ -10,7 +10,7 @@ of floating point etc. Also in some cases I "cut corners" by making instance var
 package visible instead of creating getters and setters, put related classes together etc.
 I did it for brevity sake. Code style certainly can be improved, I just wanted to
 demonstrate certain techniques , not to try an achieve ideal style :-). This example
-covers a lot of functionality of the library, so I use it for unitesting, so you can
+covers a lot of functionality of the library, so I use it for unitesting, you can
 use *ExpressionParserNegativeTest* and *ExpressionParserPositiveTest* as entry point
 of the example code.
 
@@ -47,13 +47,14 @@ Here is State machine diagrams
 Let's see what each FSM does:
 Sometimes decomposition of task to several "simpler" state machines brings clearer code, like in this case.
 In this case TokenizerFSM converts stream of chars to tokens which is easy to process in syntax parsing. Once
-the token recognized it is sent to the second state machine for processing. Most "difficult" part for this FSM
-is distinguish between '-' as part of negative literal and operation. It is achieved by introducing two states
-one "minusIsToken" and second "minus can be start of literal". Note that "business logic" are the same for both
+the token recognized, it is sent to the second state machine for processing. Most "difficult" part for this FSM
+is distinguish between '-' as part of negative literal and arithmetic operation. It is achieved by introducing two states
+one "minusIsToken" and second "minus can be start of literal". Note that "business logic" is the same for both
 states. The only difference is transitions of the states.
-Another point I'd like to show w.r.t. TokenizerFSM is chaining "technique", note that you can create pipelines
+Another point I'd like to show w.r.t. TokenizerFSM is chaining "technique". You can create pipelines
 of FSMs even though their alphabet (in other words event types sets) are different one from another.
 The FSM is specified as follows:
+
 ```xml
 <stateMachines>
     <stateMachine name="tokenizerFSM" eventTypeClass="org.blitvin.statemachine.expressionparser.TokensEnum" type="SIMPLE">
@@ -129,26 +130,27 @@ The FSM is specified as follows:
 
 ```
 
-'Business logic' of the FSM resides on call-backs of classes that implement state.
+"Business logic" of the FSM resides on callbacks of classes that implement state.
 In many cases only one or two callbacks are used, and code for states
 of the FSM should be in the same place. One of helper classes of FSM4Java, *AnnotatedObjectStateFactory* allows
 easy construction of FSM states using annotated methods. *ExpressionTree* class
 contains callbacks for ExpressionTreeFSM and *Tokenizer* contains logic of TokenizerFSM.
 As you can see actually programming doesn't require too much lines of code. The ExpressionTreeFSM
-builds expression tree. However, the tree is not stored , only relevant portion is held. The required part is path from root to currently
+builds expression tree. Note that the tree is not actually stored. FSM holds only portion required for computation of values representing by subtrees  from root to currently consturcted node. In other words, 
+the required part is path from root to currently
 constructed node. When subtree value is computed it is returned to previous level, and there is no need to store any information on the 
 subtree anymore. It is enough for the task, changes for storing entire tree is IMHO trivial, but it'd "pollute" example with code irrelevant
-to FSM per se operation.
+to FSM operation.
 
 Now I'd like to point out some interesting things on how second FSM operates. Similarly to TokenizerFSM, "business logic" code 
 is in state classes callbacks. Probably it is a typical situation for FSM4Java usage. 
 ExpressionTreeFSM states use internal transitions, that is transition on events generated during execution 
-of business logic (which is placed in stateBecomesCurrent callbacks). E.g. when FSM determines that new 
+of business logic (placed in stateBecomesCurrent callbacks). E.g. when FSM determines that new 
 expression level detected (e.g. by encountering '(' token) the expression tree must be extended with new node.
 New node must be added in case of new factor too. States startingExpression and startingFactor responsible
 for this. But once they finished their part of work, additional operations are required : e.g. if factor starts
 with literal, this literal must be processed. So event is consumed by state startFactor and new event triggers
-transition to Factor state. Another example of internal transition is syntax error handling : if the callback
+transition to Factor state. Another example of internal transition is syntax error handling, e.g. if the callback
 detects premature end of input new event of syntax error generated and processed. See "handleExpression()" for
 details.
 

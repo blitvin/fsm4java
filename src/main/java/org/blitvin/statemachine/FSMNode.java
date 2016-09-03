@@ -20,7 +20,7 @@ package org.blitvin.statemachine;
 import java.util.Map;
 
 /**
- *
+ * This is an internal interface for package only part of Node
  * @author blitvin
  */
 interface FSMNode<EventType extends Enum<EventType>> {

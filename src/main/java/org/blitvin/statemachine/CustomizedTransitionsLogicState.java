@@ -18,10 +18,17 @@
 package org.blitvin.statemachine;
 
 /**
- *
+ * 
  * @author blitvin
  * @param <EventType>
  */
 public interface CustomizedTransitionsLogicState<EventType extends Enum<EventType>> extends State<EventType>{
+    /**
+     * returns name of state to transit to.
+     * The method is called by CustomizedLogicTransition to determine the
+     * transition target state
+     * @param event
+     * @return 
+     */
     String  stateToTransitTo(Object event);
 }

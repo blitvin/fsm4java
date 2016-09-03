@@ -29,8 +29,12 @@ public class BuilderTestState<EventType extends Enum<EventType>> implements Stat
     }
 
     @Override
-    public void onStateMachineInitialized(Map<?, ?> initializer, FSMStateView containingMachine) throws BadStateMachineSpecification {
+    public void onStateAttachedToFSM(Map<?, ?> initializer, FSMStateView containingMachine) throws BadStateMachineSpecification {
         myAttribute = (String) initializer.get("myAttribute");
+    }
+
+    @Override
+    public void onStateDetachedFromFSM() {
     }
 
 }

@@ -19,24 +19,30 @@ import org.blitvin.statemachine.StateMachineEvent;
 public class TestState<EventType extends Enum<EventType>> implements State<EventType> {
 
     int counter = 0;
+
     @Override
     public void onStateBecomesCurrent(StateMachineEvent<EventType> theEvent, State<EventType> prevState) {
         ++counter;
     }
 
-    public int getCounter(){
+    public int getCounter() {
         return counter;
     }
+
     @Override
     public void onStateIsNoLongerCurrent(StateMachineEvent<EventType> theEvent, State<EventType> nextState) {
-        }
+    }
 
     @Override
     public void onInvalidTransition(StateMachineEvent<EventType> theEvent) {
-        }
+    }
 
     @Override
-    public void onStateMachineInitialized(Map<?, ?> initializer, FSMStateView containingMachine) throws BadStateMachineSpecification {
+    public void onStateAttachedToFSM(Map<?, ?> initializer, FSMStateView containingMachine) throws BadStateMachineSpecification {
     }
-    
+
+    @Override
+    public void onStateDetachedFromFSM() {
+    }
+
 }

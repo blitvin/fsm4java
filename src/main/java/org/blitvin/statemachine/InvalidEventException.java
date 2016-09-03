@@ -16,7 +16,7 @@
  */
 package org.blitvin.statemachine;
 /**
- * this exception is thrown if FSM can't process the ecent e.g. 
+ * this exception is thrown if FSM can't process the event e.g. 
  * transition map doesn't contain event type passed to the state machine
  * @author blitvin
  *

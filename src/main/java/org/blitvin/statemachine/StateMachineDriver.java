@@ -50,9 +50,5 @@ interface StateMachineDriver<EventType extends Enum<EventType>> extends StateMac
      */
     boolean initializationCompleted();
 	
-  /*      
-    FSMNodeFactory<EventType> getDefaultFSMNodeFactory();
-    FSMStateFactory<EventType> getDefaultFSMStateFactory();
-    */
     HashMap<Object,Object> getFSMProperties();
 }

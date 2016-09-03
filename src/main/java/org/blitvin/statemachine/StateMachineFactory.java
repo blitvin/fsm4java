@@ -19,6 +19,7 @@
 package org.blitvin.statemachine;
 
 import java.util.HashMap;
+import java.util.Set;
 
 
 /**
@@ -89,4 +90,5 @@ public abstract class StateMachineFactory {
                 throws  BadStateMachineSpecification;
 	
         public abstract StateMachineBuilder<? extends Enum<?>> getBuilder(String name) throws BadStateMachineSpecification;
+        public abstract Set<String> getNamesOfProvidedFSMs();
 }

@@ -17,6 +17,7 @@
  */
 package org.blitvin.statemachine.concurrent;
 
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -30,6 +31,7 @@ import org.blitvin.statemachine.StateMachineWrapperAcceptor;
 
 /**
  * Transport to propagate events to FSM wrapped in dedicated thread
+ *
  * @author blitvin
  */
 final class EventQueueEntry<EventType extends Enum<EventType>> implements Future<StampedState<EventType>>, FSMWrapperTransport<EventType> {
@@ -55,8 +57,7 @@ final class EventQueueEntry<EventType extends Enum<EventType>> implements Future
         resultingState = null;
         exception = null;
         processingState = new AtomicInteger(BEFORE_RUN);
-   }
-   
+    }
 
     public StampedState<EventType> getResultingState() {
         return resultingState;
@@ -82,15 +83,15 @@ final class EventQueueEntry<EventType extends Enum<EventType>> implements Future
         return stamp;
     }
 
-   /* void releaseLatch() {
+    /* void releaseLatch() {
         if (replyExpected) {
             latch.countDown();
         }
     }*/
-
     @Override
     public boolean cancel(boolean mayInterruptIfRunning) {
         if (processingState.compareAndSet(BEFORE_RUN, CANCELLED)) {
+            latch.countDown();
             return true;
         } else {
             return false;
@@ -104,17 +105,17 @@ final class EventQueueEntry<EventType extends Enum<EventType>> implements Future
 
     @Override
     public boolean isDone() {
-        try {
-            return latch.await(0, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            return false;
-        }
+        return processingState.get() == FINISHED;
+
     }
 
     @Override
     public StampedState<EventType> get() throws InterruptedException,
             ExecutionException {
         latch.await();
+        if (isCancelled()) {
+            throw new CancellationException();
+        }
         return resultingState;
     }
 
@@ -122,10 +123,15 @@ final class EventQueueEntry<EventType extends Enum<EventType>> implements Future
     public StampedState<EventType> get(long timeout, TimeUnit unit)
             throws InterruptedException, ExecutionException,
             TimeoutException {
+
         if (latch.await(timeout, unit)) {
+            if (isCancelled()) {
+                throw new CancellationException();
+            }
+
             return resultingState;
         } else {
-            return null;
+            throw new TimeoutException();
         }
     }
 
@@ -134,7 +140,7 @@ final class EventQueueEntry<EventType extends Enum<EventType>> implements Future
     }
 
     @Override
-    public void apply(StateMachineWrapperAcceptor<EventType> machine, 
+    public void apply(StateMachineWrapperAcceptor<EventType> machine,
             StateMachineWrapperAcceptor<EventType> wrapped) {
         ConcurrentStateMachine.ProcessingThread wrapper = (ConcurrentStateMachine.ProcessingThread<EventType>) machine;
         //ConcurrentStateMachine.Generation gen = wrapper.getCurrentGeneration();
@@ -148,8 +154,9 @@ final class EventQueueEntry<EventType extends Enum<EventType>> implements Future
             } else {
                 fsm.transit(getEvent());
                 StampedState<EventType> result = new StampedState<>(fsm.getCurrentState(), wrapper.advanceGeneration());
-                if (replyExpected)
+                if (replyExpected) {
                     setResultingState(result);
+                }
                 wrapper.setCurState(result);
             }
         } catch (Exception e) {
@@ -158,13 +165,13 @@ final class EventQueueEntry<EventType extends Enum<EventType>> implements Future
             wrapper.setCurState(resultingState);
         } finally {
             if (replyExpected) {
-            processingState.set(EventQueueEntry.FINISHED);
-            latch.countDown();
+                processingState.compareAndSet(EventQueueEntry.RUNNING,EventQueueEntry.FINISHED);
+                latch.countDown();
             }
         }
     }
 
-/*
+    /*
     @Override
     public boolean shouldPropagate(StateMachine<EventType> machine, StateMachine<EventType> wrapped) {
         return false;

@@ -31,6 +31,7 @@ import org.blitvin.statemachine.InvalidEventException;
 import org.blitvin.statemachine.State;
 import org.blitvin.statemachine.StateMachine;
 import org.blitvin.statemachine.StateMachineEvent;
+import org.blitvin.statemachine.StateMachineWrapperAcceptor;
 
 /**
  * ConcurrentStateMachine provides thread safe implementation of state machine.
@@ -50,8 +51,6 @@ public class ConcurrentStateMachine<EventType extends Enum<EventType>> extends F
     private volatile ProcessingThread<EventType> wrapper;
 
     protected final InterThreadCom<EventType> interThreadCom;
-
-    
 
     protected static abstract class InterThreadCom<EventType extends Enum<EventType>> {
 
@@ -142,10 +141,11 @@ public class ConcurrentStateMachine<EventType extends Enum<EventType>> extends F
      * The constructor accepts (possible not concurrent state safe)state machine
      * and wraps it in ConcurrentStateMachine Note that one must call
      * completeInitialization so that the state machine thread start running
-     * Note that this constructor creates concurrent stater machine with no restrictions
-     * on how many events are waiting for processing, so it is possible to get OutOfMemory
-     * exception if too much event sent and processing state machine can't keep up with
-     * senders
+     * Note that this constructor creates concurrent stater machine with no
+     * restrictions on how many events are waiting for processing, so it is
+     * possible to get OutOfMemory exception if too much event sent and
+     * processing state machine can't keep up with senders
+     *
      * @param machine
      * @param threadName name of wrapper thread ( for display and debug usage
      * only)
@@ -163,11 +163,13 @@ public class ConcurrentStateMachine<EventType extends Enum<EventType>> extends F
      * and wraps it in ConcurrentStateMachine Note that one must call
      * completeInitialization so that the state machine thread start running
      * This constructor creates FSM with at most queueCapacity events waiting
-     * for processing. Thread attempting to place event with not enough room for events
-     * is blocked until room becomes available
+     * for processing. Thread attempting to place event with not enough room for
+     * events is blocked until room becomes available
+     *
      * @param machine wrapped FSM
-     * @param threadName name of dedicated thread ( good for debugging purposes etc.)
-     * @param queueCapacity  how much events can wait processing
+     * @param threadName name of dedicated thread ( good for debugging purposes
+     * etc.)
+     * @param queueCapacity how much events can wait processing
      */
     public ConcurrentStateMachine(StateMachine<EventType> machine, String threadName,
             int queueCapacity) {
@@ -179,14 +181,15 @@ public class ConcurrentStateMachine<EventType extends Enum<EventType>> extends F
     }
 
     /**
-     *  The constructor accepts (possible not concurrent state safe)state machine
+     * The constructor accepts (possible not concurrent state safe)state machine
      * and wraps it in ConcurrentStateMachine Note that one must call
      * completeInitialization so that the state machine thread start running
      * This constructor creates FSM with at most queueCapacity events waiting
-     * for processing. Thread attempting to place event with not enough room for events
-     * is blocked until room becomes available
+     * for processing. Thread attempting to place event with not enough room for
+     * events is blocked until room becomes available
+     *
      * @param machine wrapped FSM
-     * @param queueCapacity 
+     * @param queueCapacity
      */
     public ConcurrentStateMachine(StateMachine<EventType> machine, int queueCapacity) {
         this(machine, "Async FSM", queueCapacity);
@@ -209,13 +212,14 @@ public class ConcurrentStateMachine<EventType extends Enum<EventType>> extends F
      * completeInitialization so that the state machine thread start running
      * This constructor creates FSM with at most queueCapacity events waiting
      * for processing. Thread attempting to put new event when no room available
-     * waits time specified by timeout. If event can't be placed during this timeout
-     * exception is thrown
+     * waits time specified by timeout. If event can't be placed during this
+     * timeout exception is thrown
+     *
      * @param machine wrapped FSM
-     * @param threadName 
+     * @param threadName
      * @param queueCapacity maximal number of events awaiting processing
-     * @param timeout 
-     * @param timeUnit 
+     * @param timeout
+     * @param timeUnit
      */
     public ConcurrentStateMachine(StateMachine<EventType> machine,
             String threadName, int queueCapacity, long timeout, TimeUnit timeUnit) {
@@ -233,6 +237,36 @@ public class ConcurrentStateMachine<EventType extends Enum<EventType>> extends F
     public ConcurrentStateMachine(StateMachine<EventType> machine,
             int queueCapacity, long timeout, TimeUnit timeUnit) {
         this(machine, "Async FSM", queueCapacity, timeout, timeUnit);
+    }
+
+    final static class SetPropertyEntry<EventType extends Enum<EventType>> implements FSMWrapperTransport<EventType> {
+
+        private final Object name;
+        private final Object value;
+        volatile boolean result;
+        final CountDownLatch latch;
+
+        public SetPropertyEntry(Object name, Object value) {
+            this.name = name;
+            this.value = value;
+            latch = new CountDownLatch(1);
+        }
+
+        public boolean getResult() {
+            try {
+                latch.await();
+            } catch (InterruptedException ex) {
+                return false;
+            }
+            return result;
+        }
+
+        @Override
+        public void apply(StateMachineWrapperAcceptor<EventType> machine,
+                StateMachineWrapperAcceptor<EventType> wrapped) {
+            ((StateMachine<EventType>) wrapped).setProperty(name, value);
+            latch.countDown();
+        }
     }
 
     @Override
@@ -257,12 +291,41 @@ public class ConcurrentStateMachine<EventType extends Enum<EventType>> extends F
         return wrapper.getMachine().getStateNames();
     }
 
+    static final class ReplaceWrappedFSMEntry<EventType extends Enum<EventType>> implements FSMWrapperTransport<EventType> {
+
+        private final StateMachine<EventType> newRef;
+        private final CountDownLatch latch;
+        volatile boolean updated;
+
+        @Override
+        public void apply(StateMachineWrapperAcceptor<EventType> machine,
+                StateMachineWrapperAcceptor<EventType> wrapped) throws FSMWrapperException {
+            updated = ((ConcurrentStateMachine.ProcessingThread) machine).replaceWrappedWith(newRef);
+            latch.countDown();
+        }
+
+        public boolean checkIsSuccessfull() {
+            try {
+                latch.await();
+                return updated;
+            } catch (InterruptedException ex) {
+                return false;
+            }
+        }
+
+        public ReplaceWrappedFSMEntry(StateMachine<EventType> newRef) {
+            this.newRef = newRef;
+            latch = new CountDownLatch(1);
+            updated = false;
+        }
+    }
+
     @Override
     public boolean replaceWrappedWith(StateMachine<EventType> newRef) {
-       ReplaceWrappedFSMEntry<EventType> transport = new ReplaceWrappedFSMEntry<>(newRef);
-       if (interThreadCom.send(transport)){
-           return transport.checkIsSuccessfull();
-       }
+        ReplaceWrappedFSMEntry<EventType> transport = new ReplaceWrappedFSMEntry<>(newRef);
+        if (interThreadCom.send(transport)) {
+            return transport.checkIsSuccessfull();
+        }
         return false; // couldn't propagate to dedicated thread
     }
 
@@ -274,14 +337,15 @@ public class ConcurrentStateMachine<EventType extends Enum<EventType>> extends F
         private StampedState<EventType> curState;
 
         private int generation;
-        
-        int advanceGeneration(){
+
+        int advanceGeneration() {
             return ++generation;
         }
-        int getGeneration(){
+
+        int getGeneration() {
             return generation;
         }
-        
+
         void setCurState(StampedState<EventType> newCurState) {
             curState = newCurState;
         }
@@ -298,13 +362,12 @@ public class ConcurrentStateMachine<EventType extends Enum<EventType>> extends F
             this.interThreadCom = interThreadCom;
             this.machine = machine;
             generation = 1;
-            curState = new StampedState<>(machine.getCurrentState(),generation);
+            curState = new StampedState<>(machine.getCurrentState(), generation);
         }
 
-       /* public Generation getCurrentGeneration() {
-            return curGeneration;
-        }*/
-
+        /* public Generation getCurrentGeneration() {
+         return curGeneration;
+         }*/
         @Override
         public void run() {
             while (true) {
@@ -362,10 +425,11 @@ public class ConcurrentStateMachine<EventType extends Enum<EventType>> extends F
     @Override
     public Future<StampedState<EventType>> asyncTransit(StateMachineEvent<EventType> event) {
         EventQueueEntry<EventType> retVal = new EventQueueEntry<>(event, 0, new CountDownLatch(1));
-        if (!interThreadCom.send((FSMWrapperTransport< EventType>) retVal))
+        if (!interThreadCom.send((FSMWrapperTransport< EventType>) retVal)) {
             return null;
-        else
+        } else {
             return retVal;
+        }
     }
 
     /**
@@ -401,21 +465,22 @@ public class ConcurrentStateMachine<EventType extends Enum<EventType>> extends F
     public StampedState<EventType> CAStransit(StateMachineEvent<EventType> event, int generation) throws InvalidEventException {
         EventQueueEntry<EventType> entry = new EventQueueEntry<>(event, generation, new CountDownLatch(1));
         try {
-            if (!interThreadCom.send((FSMWrapperTransport< EventType>) entry))
+            if (!interThreadCom.send((FSMWrapperTransport< EventType>) entry)) {
                 throw new InvalidEventException("failed to send event to processing thread");
+            }
             StampedState<EventType> retVal = entry.get();
             Exception e = entry.getException();
             if (e != null) {
                 if (e instanceof InvalidEventException) {
                     throw (InvalidEventException) e;
                 } else {
-                    throw new InvalidEventException("exception happened during transition processing",e);
+                    throw new InvalidEventException("exception happened during transition processing", e);
                 }
             }
             return retVal;
 
         } catch (InterruptedException | ExecutionException e) {
-            throw new InvalidEventException("failed to send event to processing thread",e); // actually don't think this can happen
+            throw new InvalidEventException("failed to send event to processing thread", e); // actually don't think this can happen
         }
     }
 
@@ -492,7 +557,6 @@ public class ConcurrentStateMachine<EventType extends Enum<EventType>> extends F
         return initialized;
     }
 
-    @Override
     public void start() {
         completeInitialization();
     }
@@ -500,15 +564,15 @@ public class ConcurrentStateMachine<EventType extends Enum<EventType>> extends F
     /**
      * stop internal FSM and exit its dedicated thread
      */
-    @Override
     public void shutDown() {
         wrapper.interrupt();
     }
 
     @Override
     public void acceptWrapperTransport(FSMWrapperTransport<EventType> transport) throws FSMWrapperException {
-        if (!interThreadCom.send(transport))
+        if (!interThreadCom.send(transport)) {
             throw new FSMWrapperException("can't propagate transport to processing thread");
+        }
         // processing thread decides what to do with this transport
     }
 }

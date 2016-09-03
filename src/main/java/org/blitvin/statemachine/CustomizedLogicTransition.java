@@ -21,7 +21,10 @@ package org.blitvin.statemachine;
 import java.util.Map;
 
 /**
- *
+ * this class allows state to defined custom logic of transition.
+ * state object is consulted to obtain name of the target state for FSM to transit
+ * to. State must implement CustomizedTransitionsLogicState interface
+ * 
  * @author blitvin
  */
 class CustomizedLogicTransition<EventType extends Enum<EventType>> implements Transition<EventType> {

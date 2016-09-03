@@ -29,7 +29,7 @@ import java.util.Set;
  * @author blitvin
  * @param <EventType>
  */
-public class FSMWrapper<EventType extends Enum<EventType>> implements StateMachine<EventType> {
+public class FSMWrapper<EventType extends Enum<EventType>> implements StateMachine<EventType>,StateMachineWrapper<EventType> {
     protected StateMachine<EventType> wrapped;
     
     public FSMWrapper(StateMachine<EventType> wrapped){
@@ -80,6 +80,7 @@ public class FSMWrapper<EventType extends Enum<EventType>> implements StateMachi
     }
     
     
+    @Override
     public boolean replaceWrappedWith(StateMachine<EventType> newRef){
         wrapped = newRef;
         return true;

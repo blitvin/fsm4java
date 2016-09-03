@@ -26,5 +26,5 @@ package org.blitvin.statemachine;
  */
 public interface FSMStateView<EventType extends Enum<EventType>> extends FSMCommonInterface<EventType>{
      void registerPropertyChangeListener(PropertyChangeListener listener, Object propertyName);
-   
+     void deregisterPropertyChangeListener(PropertyChangeListener listener, Object propertyName);
 }

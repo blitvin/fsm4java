@@ -1,22 +1,43 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Copyright (C) 2016 blitvin.
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ * MA 02110-1301  USA
  */
+
 package org.blitvin.statemachine.performancetest;
 
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import static java.util.concurrent.Executors.newFixedThreadPool;
+import java.util.concurrent.LinkedBlockingQueue;
 import org.blitvin.statemachine.BadStateMachineSpecification;
 import org.blitvin.statemachine.InvalidEventException;
 import org.blitvin.statemachine.StateMachine;
 import org.blitvin.statemachine.StateMachineBuilder;
-import org.blitvin.statemachine.concurrent.ConcurrentStateMachine;
+import org.blitvin.statemachine.concurrent.AsyncStateMachine;
+import org.blitvin.statemachine.concurrent.FSMQueueSubmittable;
+import org.blitvin.statemachine.concurrent.FSMThreadPoolFacade;
 
 /**
  *
  * @author blitvin
  */
-public class MultipleConcurrentFSMPerformanceMeasurement {
+public class PooledFSMPerformanceMeasurement {
     public static String STATE_INITIAL = "initial";
     public static String STATE_START = "start";
     public static String STATE_MIDDLE = "middle";
@@ -26,10 +47,10 @@ public class MultipleConcurrentFSMPerformanceMeasurement {
 
         int blocks;
         int blockSize;
-        ConcurrentStateMachine<PerformanceEnum> concurrentFSM;
+        AsyncStateMachine<PerformanceEnum> concurrentFSM;
         CountDownLatch startLatch;
 
-        public SenderThread(int blocks, int blockSize, ConcurrentStateMachine<PerformanceEnum> concurrentFSM,
+        public SenderThread(int blocks, int blockSize, AsyncStateMachine<PerformanceEnum> concurrentFSM,
                 CountDownLatch latch) {
             this.blocks = blocks;
             this.blockSize = blockSize;
@@ -47,7 +68,7 @@ public class MultipleConcurrentFSMPerformanceMeasurement {
             }
             for (int i = 0; i < blocks; ++i) {
                 for(int j=0; j< blockSize; ++j)
-                   concurrentFSM.fireAndForgetTransit(event);
+                 //  concurrentFSM.fireAndForgetTransit(event);
                 
                 try {
                     concurrentFSM.transit(event);
@@ -61,21 +82,21 @@ public class MultipleConcurrentFSMPerformanceMeasurement {
     }
 
     public static void runFSMTest(int blocks, int blockSize, int threads, 
-            ConcurrentStateMachine<PerformanceEnum> fsm,
+            AsyncStateMachine<PerformanceEnum> fsm,
             CountDownLatch startLatch, CountDownLatch endLatch) throws InvalidEventException, InterruptedException {
-        BasicConcurrentFSMPerformanceMeasurement.SenderThread[] senders = new BasicConcurrentFSMPerformanceMeasurement.SenderThread[threads];
+        SenderThread[] senders = new SenderThread[threads];
        // CountDownLatch latch = new CountDownLatch(1);
         for (int i = 0; i < threads; ++i) {
 
-            senders[i] = new BasicConcurrentFSMPerformanceMeasurement.SenderThread(blocks, blockSize, fsm, startLatch);
+            senders[i] = new SenderThread(blocks, blockSize, fsm, startLatch);
         }
 
-        for (BasicConcurrentFSMPerformanceMeasurement.SenderThread sender : senders) {
+        for (SenderThread sender : senders) {
             sender.start();
         }
         fsm.transit(new PerformanceEvent(PerformanceEnum.A));
         startLatch.countDown();
-        for (BasicConcurrentFSMPerformanceMeasurement.SenderThread sender : senders) {
+        for (SenderThread sender : senders) {
             sender.join();
         }
         fsm.transit(new PerformanceEvent(PerformanceEnum.B));
@@ -85,12 +106,12 @@ public class MultipleConcurrentFSMPerformanceMeasurement {
         
     }
     public static class TestThread extends Thread {
-        ConcurrentStateMachine<PerformanceEnum> fsm;
+        AsyncStateMachine<PerformanceEnum> fsm;
         CountDownLatch startLatch;
         SenderThread senders[];
         
         public TestThread(int blocks, int blockSize, int threads, 
-            ConcurrentStateMachine<PerformanceEnum> fsm,
+            AsyncStateMachine<PerformanceEnum> fsm,
             CountDownLatch startLatch) throws InvalidEventException{
             
             this.startLatch = startLatch;
@@ -131,7 +152,9 @@ public class MultipleConcurrentFSMPerformanceMeasurement {
     
     public static void runTest(int fsms, int clients, int transactions_per_fsm)
     throws BadStateMachineSpecification, InvalidEventException, InterruptedException{
-        ConcurrentStateMachine<PerformanceEnum>[] concurrentFSM = new ConcurrentStateMachine[fsms];
+        ExecutorService pool = Executors.newFixedThreadPool(4);
+       
+        FSMThreadPoolFacade<PerformanceEnum>[] concurrentFSM = new FSMThreadPoolFacade[FSMS];
        CountDownLatch latch = new CountDownLatch(fsms);
        TestThread[] testThreads = new TestThread[fsms];
        
@@ -149,32 +172,34 @@ public class MultipleConcurrentFSMPerformanceMeasurement {
                 addState(STATE_MIDDLE, new EmptyState()).addTransition(PerformanceEnum.A, STATE_MIDDLE).
                 addTransition(PerformanceEnum.B, STATE_FINISH).
                 addState(STATE_FINISH, new MarkState(STATE_FINISH)).addDefaultTransition(STATE_INITIAL).build();
-        concurrentFSM[i] = new ConcurrentStateMachine<>(fsm, QUEUE_SIZE);
-        concurrentFSM[i].completeInitialization();
+        concurrentFSM[i] = new FSMThreadPoolFacade<>(fsm, pool, new LinkedBlockingQueue<FSMQueueSubmittable>());
        }
        for(int i = 0 ; i< fsms; ++i){
            testThreads[i] = new TestThread(transactions_per_fsm/QUEUE_SIZE/clients , 
-                   QUEUE_SIZE, clients, concurrentFSM[i], latch);
+                   QUEUE_SIZE, clients, concurrentFSM[i].getProxy(), latch);
            testThreads[i].start();
        }
        for(int i = 0 ; i< fsms; ++i)
            testThreads[i].join();
        long maxDelta =0;
        for(int i = 0 ; i < fsms; ++i) {
-           long start = (Long) concurrentFSM[i].getProperty(STATE_START);
-           long finish = (Long) concurrentFSM[i].getProperty(STATE_FINISH);
+           AsyncStateMachine<PerformanceEnum> proxy = concurrentFSM[i].getProxy();
+           long start = (Long) proxy.getProperty(STATE_START);
+           long finish = (Long) proxy.getProperty(STATE_FINISH);
            if ( maxDelta < (finish - start))
                maxDelta  = (finish - start);
+           
        }
        
         
        System.out.println(" Total transitions="+transactions_per_fsm *fsms + " elapsed miliseconds="+maxDelta
        + " average throughput TP/miliSec "+ ((long)transactions_per_fsm)*fsms/maxDelta);
+       pool.shutdown();
     }
     
     
-    public static final int FSMS = 10;
-    public static final int CLIENTS_PER_FSM = 5;
+    public static final int FSMS = 5;
+    public static final int CLIENTS_PER_FSM = 2;
     public static final int QUEUE_SIZE = 10000;
     public static final int TRANSACTIONS_PER_FSM = 1000000;
     
@@ -182,8 +207,8 @@ public class MultipleConcurrentFSMPerformanceMeasurement {
     
     
     public static void main(String[] args) throws BadStateMachineSpecification, InvalidEventException, InterruptedException {
-     
-       ConcurrentStateMachine<PerformanceEnum>[] concurrentFSM = new ConcurrentStateMachine[FSMS];
+        ExecutorService pool = Executors.newFixedThreadPool(4);
+       FSMThreadPoolFacade<PerformanceEnum>[] concurrentFSM = new FSMThreadPoolFacade[FSMS];
        CountDownLatch latch = new CountDownLatch(FSMS);
        TestThread[] testThreads = new TestThread[FSMS];
        for( int i = 0 ; i < FSMS; ++i) {
@@ -194,20 +219,20 @@ public class MultipleConcurrentFSMPerformanceMeasurement {
                 addState(STATE_MIDDLE, new EmptyState()).addTransition(PerformanceEnum.A, STATE_MIDDLE).
                 addTransition(PerformanceEnum.B, STATE_FINISH).
                 addState(STATE_FINISH, new MarkState(STATE_FINISH)).addDefaultTransition(STATE_INITIAL).build();
-        concurrentFSM[i] = new ConcurrentStateMachine<>(fsm, QUEUE_SIZE);
-        concurrentFSM[i].completeInitialization();
+        concurrentFSM[i] = new FSMThreadPoolFacade<>(fsm, pool, new LinkedBlockingQueue<FSMQueueSubmittable>());
        }
        for(int i = 0 ; i< FSMS; ++i){
            testThreads[i] = new TestThread(TRANSACTIONS_PER_FSM/QUEUE_SIZE/CLIENTS_PER_FSM , 
-                   QUEUE_SIZE, CLIENTS_PER_FSM, concurrentFSM[i], latch);
+                   QUEUE_SIZE, CLIENTS_PER_FSM, concurrentFSM[i].getProxy(), latch);
            testThreads[i].start();
        }
        for(int i = 0 ; i< FSMS; ++i)
            testThreads[i].join();
        long maxDelta =0;
        for(int i = 0 ; i < FSMS; ++i) {
-           long start = (Long) concurrentFSM[i].getProperty(STATE_START);
-           long finish = (Long) concurrentFSM[i].getProperty(STATE_FINISH);
+           AsyncStateMachine<PerformanceEnum> proxy = concurrentFSM[i].getProxy();
+           long start = (Long) proxy.getProperty(STATE_START);
+           long finish = (Long) proxy.getProperty(STATE_FINISH);
            if ( maxDelta < (finish - start))
                maxDelta  = (finish - start);
        }
@@ -217,6 +242,7 @@ public class MultipleConcurrentFSMPerformanceMeasurement {
        System.out.println(" Total transitions="+TRANSACTIONS_PER_FSM *FSMS + " elapsed miliseconds="+maxDelta
        + " average throughput TP/miliSec "+ ((long)TRANSACTIONS_PER_FSM)*FSMS/maxDelta);
     
+    pool.shutdown();
     
     int[] FSMS_SET= {2,5,10,20};
     int[] CLIENTS_SET = {2,5,10};
@@ -225,7 +251,7 @@ public class MultipleConcurrentFSMPerformanceMeasurement {
     for(int fsms:FSMS_SET)
         for(int clients: CLIENTS_SET)
             for(int transitions: TRANSICTIONS_PER_FSM_SET){
-                runTest(fsms, clients, transitions);
+                runTest(fsms, clients, transitions/fsms);
             }
     } 
 

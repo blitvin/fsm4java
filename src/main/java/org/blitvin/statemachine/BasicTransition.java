@@ -22,7 +22,7 @@ import java.util.Map;
 import static org.blitvin.statemachine.StateMachineBuilder.TARGET_STATE;
 
 /**
- *
+ * implementation of transition to predefined state
  * @author blitvin
  */
 class BasicTransition<EventType extends Enum<EventType>> implements Transition<EventType> {

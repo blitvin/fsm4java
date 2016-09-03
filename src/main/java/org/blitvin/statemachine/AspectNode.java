@@ -20,7 +20,10 @@ package org.blitvin.statemachine;
 import java.util.Map;
 
 /**
- *
+ * Aspect node supports aspects execution, it serves as proxy to actual node
+ * and intercepts methods of the underlying node and invokes appropriate aspect method
+ * AspectNode implements listener that allows on the fly update of aspect objects
+ * if it is changed in runtime
  * @author blitvin
  * 
  * 
@@ -88,6 +91,7 @@ class AspectNode<EventType extends Enum<EventType>> implements FSMNode<EventType
         
     }
     
+    
     private AspectPropertyListener<EventType> listener = null;
     public void setAspects(StateMachineAspects<EventType> aspects) {
         this.aspects = aspects;
@@ -131,7 +135,14 @@ class AspectNode<EventType extends Enum<EventType>> implements FSMNode<EventType
             throw e;
         }
     }
-    
+    /**
+     * this method is called to complete initialization, which is in this case means
+     * registration of listener that is going to be notified when aspect object is changed
+     * also, initialization is propagated to underlying node
+     * @param initializer
+     * @param containingMachine
+     * @throws BadStateMachineSpecification 
+     */
     @Override
     public void onStateMachineInitialized(Map<?, ?> initializer, StateMachineDriver<EventType> containingMachine) throws BadStateMachineSpecification {
        /* initializer.put((?)delegate,

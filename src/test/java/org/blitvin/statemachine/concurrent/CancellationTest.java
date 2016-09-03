@@ -5,9 +5,15 @@
  */
 package org.blitvin.statemachine.concurrent;
 
-import java.util.HashMap;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.LinkedBlockingQueue;
 import org.blitvin.statemachine.BadStateMachineSpecification;
 import org.blitvin.statemachine.State;
 import org.blitvin.statemachine.StateMachine;
@@ -18,31 +24,57 @@ import static org.blitvin.statemachine.StateMachineBuilder.FSM_TYPES.ASPECT;
 import static org.blitvin.statemachine.StateMachineBuilder.TARGET_STATE;
 import org.blitvin.statemachine.StateMachineEvent;
 import org.blitvin.statemachine.buildertest.BuilderTestState;
+import org.junit.AfterClass;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 /**
  *
  * @author blitvin
  */
+@RunWith(Parameterized.class)
 public class CancellationTest {
 
-    private static class BarrierAspect implements StateMachineAspects {
+    public enum AsyncTypes {
+        CONCURRENT_FSM,
+        POOLED_FSM
+    };
+    private static final ExecutorService pool = Executors.newFixedThreadPool(4);
+    private AsyncTypes fsmType;
 
-        private final Semaphore fsmSemaphore;
-        private final Semaphore mainSemaphore;
+    @Parameterized.Parameters
+    public static Collection asyncMachineBuilders() {
+        Object[][] builders = {
+            {AsyncTypes.CONCURRENT_FSM},
+            {AsyncTypes.POOLED_FSM}
+        };
+        return Arrays.asList(builders);
+    }
 
-        public BarrierAspect(Semaphore fsmSemaphore, Semaphore mainSemaphore) {
-            this.fsmSemaphore = fsmSemaphore;
-            this.mainSemaphore = mainSemaphore;
+    public CancellationTest(AsyncTypes fsmType) {
+        this.fsmType = fsmType;
+    }
+
+    @AfterClass
+    public static void shutdownPool(){
+        pool.shutdown();
+    }
+    private static class DelayExecutionAspect implements StateMachineAspects {
+
+        private final CountDownLatch latch;
+
+        public DelayExecutionAspect(CountDownLatch latch) {
+            this.latch = latch;
         }
 
         @Override
         public boolean onTransitionStart(StateMachineEvent event) {
-            return true;
+           return true;
         }
 
         @Override
@@ -57,7 +89,7 @@ public class CancellationTest {
         @Override
         public boolean onControlEntersState(StateMachineEvent event, State currentState, State prevState) {
             try {
-                fsmSemaphore.acquire();
+                latch.await();
             } catch (InterruptedException ex) {
                 fail("Unexpected exception " + ex);
             } finally {
@@ -67,7 +99,6 @@ public class CancellationTest {
 
         @Override
         public void onTransitionFinish(StateMachineEvent event, State currentState, State prevState) {
-            mainSemaphore.release();
         }
 
         @Override
@@ -75,6 +106,7 @@ public class CancellationTest {
         }
 
     }
+
     /*
      *                                    -> (third) 
      *                       A         A /
@@ -84,7 +116,7 @@ public class CancellationTest {
      * for sequence A-A-B
      */
 
-    private ConcurrentStateMachine<TestEnum> getMachine(BarrierAspect aspect) {
+    private AsyncStateMachine<TestEnum> getMachine(DelayExecutionAspect aspect) {
         try {
 
             StateMachineBuilder<TestEnum> builder = new StateMachineBuilder(ASPECT, TestEnum.class);
@@ -100,80 +132,93 @@ public class CancellationTest {
                     .addDefaultTransition().addProperty(TARGET_STATE, "forth")
                     .addFSMProperty(StateMachineBuilder.ASPECTS_PROPERTY, aspect)
                     .build();
-            ConcurrentStateMachine<TestEnum> retVal = new ConcurrentStateMachine<>(aspectFSM);
-            retVal.start();
-            return retVal;
+            switch (fsmType) {
+                case CONCURRENT_FSM:
+                    ConcurrentStateMachine<TestEnum> retVal = new ConcurrentStateMachine<>(aspectFSM);
+                    retVal.start();
+                    return retVal;
+                case POOLED_FSM:
+                    return new FSMThreadPoolFacade<>(aspectFSM, pool,
+                            new LinkedBlockingQueue<FSMQueueSubmittable>()).getProxy();
+
+            }
+            return null;
+
         } catch (BadStateMachineSpecification ex) {
             fail("Unexpected exception during construction of the machine:" + ex);
         }
         return null;
     }
 
+    private void shutdownConcurrent(AsyncStateMachine<TestEnum> fsm) {
+        if (fsmType == AsyncTypes.CONCURRENT_FSM) {
+            ((ConcurrentStateMachine<TestEnum>) fsm).shutDown();
+        }
+    }
+
     @Test
-    public void testNoCancelation() {
+    public void testNoCancelation() throws ExecutionException {
         try {
-            Semaphore fsmSemaphore = new Semaphore(1);
-            Semaphore mainSemaphore = new Semaphore(1);
-            fsmSemaphore.acquire();
-            mainSemaphore.acquire();
-            BarrierAspect aspect = new BarrierAspect(fsmSemaphore, mainSemaphore);
-            ConcurrentStateMachine<TestEnum> cm = getMachine(aspect);
-            cm.fireAndForgetTransit(new TestEvent<>(TestEnum.A));
-            fsmSemaphore.release();
-            mainSemaphore.acquire();
-            cm.fireAndForgetTransit(new TestEvent<>(TestEnum.A));
-            fsmSemaphore.release();
-            mainSemaphore.acquire();
-            cm.fireAndForgetTransit(new TestEvent<>(TestEnum.B));
-            fsmSemaphore.release();
-            mainSemaphore.acquire();
-            State s1 = cm.getCurrentState();
-            State s2 = cm.getStateByName("third");
+            CountDownLatch latch = new CountDownLatch(1);
+            DelayExecutionAspect aspect = new DelayExecutionAspect(latch);
+            AsyncStateMachine<TestEnum> cm = getMachine(aspect);
+            Future<StampedState<TestEnum>> future = cm.asyncTransit(new TestEvent<>(TestEnum.A));
+            Future<StampedState<TestEnum>> future2 = cm.asyncTransit(new TestEvent<>(TestEnum.A));
+            Future<StampedState<TestEnum>> future3 = cm.asyncTransit(new TestEvent<>(TestEnum.B));
+            
+            latch.countDown();
+            StampedState<TestEnum> state = future.get();
+            assertEquals(2,state.getStamp());
+            assertEquals(state.getState(),cm.getStateByName("second"));
+            state = future2.get();
+            assertEquals(state.getState(),cm.getStateByName("third"));
+            assertEquals(3,state.getStamp());
+            state = future3.get();
+            assertEquals(state.getState(),cm.getStateByName("third"));
+            assertEquals(4,state.getStamp());
+            state = cm.getCurrentStampedState();
+            assertEquals(state.getState(),cm.getStateByName("third"));
+            assertEquals(4,state.getStamp());
             assertEquals("third", cm.getNameOfCurrentState());
-            assertEquals(s1, s2);
-            assertEquals(cm.getCurrentState(), cm.getStateByName("third"));
-            fsmSemaphore.release();
-            cm.shutDown();
+            shutdownConcurrent(cm);
         } catch (InterruptedException ex) {
             fail("Unexpected exception happened in testNoCancellation:" + ex);
         }
     }
 
     @Test
-    public void testWithCancelation() {
+    public void testWithCancelation() throws ExecutionException {
         try {
-            Semaphore fsmSemaphore = new Semaphore(1);
-            Semaphore mainSemaphore = new Semaphore(1);
-            BarrierAspect aspect = new BarrierAspect(fsmSemaphore, mainSemaphore);
-            fsmSemaphore.acquire();
-            mainSemaphore.acquire();
-            ConcurrentStateMachine<TestEnum> cm = getMachine(aspect);
-            Future<StampedState<TestEnum>> futureFirstTransition = cm.asyncTransit(new TestEvent<>(TestEnum.A));
+            CountDownLatch latch = new CountDownLatch(1);
+            DelayExecutionAspect aspect = new DelayExecutionAspect(latch);
+            AsyncStateMachine<TestEnum> cm = getMachine(aspect);
             Future<StampedState<TestEnum>> future = cm.asyncTransit(new TestEvent<>(TestEnum.A));
-            assertTrue(future.cancel(true));
-            assertFalse(future.cancel(true));// second cancell must return false per Future spec
-            fsmSemaphore.release();
-            mainSemaphore.acquire();
-            cm.fireAndForgetTransit(new TestEvent<>(TestEnum.B));
-            fsmSemaphore.release();
-            mainSemaphore.acquire();
-            /* we need to send another event because of race  between state machine thread
-             and main thread - aspect runs in "inner" state machine so it finishes before
-             wrapper sets resulting state to eventqueue element. So if main calls 
-             cm.getCurrentState() before wrapper assignes new value to stamped state
-             it sees previous value of stamped state even if internal FSM's state is already
-             changed to new one. There is no easy way to prevent this race without resync
-             on next event, perhaps 
-             */
-            cm.fireAndForgetTransit(new TestEvent<>(TestEnum.A));
-            fsmSemaphore.release();
-            mainSemaphore.acquire();
-            assertFalse(futureFirstTransition.cancel(true)); // future of completed task must return false
-            State s1 = cm.getCurrentState();
-            State s2 = cm.getStateByName("forth");
-            assertEquals("forth", cm.getNameOfCurrentState());
-            assertEquals(s1, s2);
-            cm.shutDown();
+            Future<StampedState<TestEnum>> future2 = cm.asyncTransit(new TestEvent<>(TestEnum.A));
+            Future<StampedState<TestEnum>> future3 = cm.asyncTransit(new TestEvent<>(TestEnum.B));
+            assertTrue(future2.cancel(true));
+            assertFalse(future2.cancel(true));// second cancell must return false per Future spec
+            latch.countDown();
+            StampedState<TestEnum> state = future.get();
+            assertTrue(future2.isCancelled());
+            try {
+                future2.get();
+                        
+            }
+            catch(CancellationException ex){
+                
+            }
+            catch(ExecutionException ex) {
+                fail("expecting cancellation exception");
+            }
+            state = future3.get();
+            assertEquals(state.getState(),cm.getStateByName("forth"));
+            assertEquals(3, state.getStamp());
+            
+            state = cm.getCurrentStampedState();
+            assertEquals(state.getState(),cm.getStateByName("forth"));
+            assertEquals(3, state.getStamp());
+            assertEquals("forth",cm.getNameOfCurrentState());
+            shutdownConcurrent(cm);
         } catch (InterruptedException ex) {
             fail("Unexpected exception happened in testWithCancelation:" + ex);
         }

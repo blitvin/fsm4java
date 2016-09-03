@@ -18,9 +18,6 @@
 package org.blitvin.statemachine;
 
 public class InvalidFactoryImplementation extends Exception {
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = -5234585034138276392L;
 
 	public InvalidFactoryImplementation(String message , Throwable cause) {

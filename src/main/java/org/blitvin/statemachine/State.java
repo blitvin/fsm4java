@@ -20,44 +20,58 @@ package org.blitvin.statemachine;
 import java.util.Map;
 
 /**
- * Interface defining callbacks for particular state (that is business logic 
+ * Interface defining callbacks for particular state (that is business logic
  * piece corresponding to particular state).
  *
  * @author blitvin
  * @param <EventType>
  */
 public interface State<EventType extends Enum<EventType>> {
+
     /**
-	 * callback for implementation of user defined logic upon state becoming current
-	 *
-	 * @param theEvent event upon which state becomes current
-	 * @param prevState previous current state
-	 */
-	void onStateBecomesCurrent(StateMachineEvent<EventType> theEvent, State<EventType> prevState);
-        
-	/**
-	 * callback for implementation of user defined logic upon other state becoming current.
-	 * This function is called after appropriate transition transit method executed and returned
-	 * state other than current  and before stateBecomesCurrentCallback of the new state is called
-	 *
-	 * @param theEvent event upon which state becomes current
-	 * @param nextState previous current state
-	 */
-	void onStateIsNoLongerCurrent(StateMachineEvent<EventType> theEvent, State<EventType> nextState);
-	/**
-         * This callback is called in case of invalid transition e.g. if transition
-         * for this event is not not defined by FSM
-         * @param theEvent 
-         */
-	void onInvalidTransition(StateMachineEvent<EventType> theEvent);
-        
-	/**
-	 * initialization callback, which completes initialization of  the state. Note that this method can be called
-	 * from within containing state machine's constructor
-	 * @param initializer map of initialization parameters
-         * @param containingMachine
-	 * @throws BadStateMachineSpecification
-	 */
-	public void onStateMachineInitialized(Map<?,?>  initializer, FSMStateView containingMachine) throws BadStateMachineSpecification;
-	
+     * callback for implementation of user defined logic upon state becoming
+     * current
+     *
+     * @param theEvent event upon which state becomes current
+     * @param prevState previous current state
+     */
+    void onStateBecomesCurrent(StateMachineEvent<EventType> theEvent, State<EventType> prevState);
+
+    /**
+     * callback for implementation of user defined logic upon other state
+     * becoming current. This function is called after appropriate transition
+     * transit method executed and returned state other than current and before
+     * stateBecomesCurrentCallback of the new state is called
+     *
+     * @param theEvent event upon which state becomes current
+     * @param nextState previous current state
+     */
+    void onStateIsNoLongerCurrent(StateMachineEvent<EventType> theEvent, State<EventType> nextState);
+
+    /**
+     * This callback is called in case of invalid transition e.g. if transition
+     * for this event is not not defined by FSM
+     *
+     * @param theEvent
+     */
+    void onInvalidTransition(StateMachineEvent<EventType> theEvent);
+
+    /**
+     * initialization callback, which completes initialization of the state.
+     * Note that this method can be called from within containing state
+     * machine's constructor
+     *
+     * @param initializer map of initialization parameters
+     * @param containingMachine
+     * @throws BadStateMachineSpecification
+     */
+    void onStateAttachedToFSM(Map<?, ?> initializer, FSMStateView containingMachine) throws BadStateMachineSpecification;
+
+    /**
+     * this life cycle callback is invoked when the state is detached from FSM,
+     * typically by invoking setState method with new object. It is intended to
+     * be used for cleanup e.g. de-registering property change listeners
+     * associated with the state object
+     */
+    void onStateDetachedFromFSM();
 }

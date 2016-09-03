@@ -18,7 +18,8 @@
 package org.blitvin.statemachine;
 
 /**
- *
+ * interface defines acceptor part of visitor-acceptor pattern used for wrapper
+ * interaction. Both wrappers and "true" FSM implement this interface 
  * @author blitvin
  * @param <EventType>
  */
